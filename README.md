@@ -9,7 +9,7 @@ Stack:
 - ORM framework Hibernate
 - Thymeleaf
 - JS
-- Html
+- HTML
 - Docker
 
 Use-case diagram:
