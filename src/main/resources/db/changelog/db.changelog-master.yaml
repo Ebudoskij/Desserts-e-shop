@@ -3,3 +3,5 @@ databaseChangeLog:
       file: db/changelog/changes/001-create-schema.sql
   - include:
       file: db/changelog/changes/002-add-soft-deletes.sql
+  - include:
+      file: db/changelog/changes/003-add-customizable-product.sql
