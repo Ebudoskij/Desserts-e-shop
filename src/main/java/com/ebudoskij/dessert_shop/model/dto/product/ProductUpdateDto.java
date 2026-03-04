@@ -13,7 +13,7 @@ import java.util.List;
 
 @Getter
 @Setter
-public class ProductCreateDto {
+public class ProductUpdateDto {
     @NotNull
     private Long categoryId;
 
@@ -29,4 +29,6 @@ public class ProductCreateDto {
     private UnitType unitType;
 
     private List<MultipartFile> images;
+
+    private List<Long> deletedImageIds;
 }

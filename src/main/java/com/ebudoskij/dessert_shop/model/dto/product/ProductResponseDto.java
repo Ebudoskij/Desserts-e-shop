@@ -1,21 +1,22 @@
 package com.ebudoskij.dessert_shop.model.dto.product;
 
+import com.ebudoskij.dessert_shop.model.Category;
+import com.ebudoskij.dessert_shop.model.dto.media.MediaResponseDto;
 import com.ebudoskij.dessert_shop.model.enums.UnitType;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import lombok.Getter;
 import lombok.Setter;
-import org.springframework.web.multipart.MultipartFile;
 
 import java.math.BigDecimal;
 import java.util.List;
 
 @Getter
 @Setter
-public class ProductCreateDto {
+public class ProductResponseDto {
     @NotNull
-    private Long categoryId;
+    private Category category;
 
     @NotBlank
     private String name;
@@ -28,5 +29,5 @@ public class ProductCreateDto {
     @NotNull
     private UnitType unitType;
 
-    private List<MultipartFile> images;
+    private List<MediaResponseDto> imageUrls;
 }

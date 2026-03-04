@@ -3,6 +3,7 @@ package com.ebudoskij.dessert_shop.controller;
 import com.ebudoskij.dessert_shop.model.Product;
 import com.ebudoskij.dessert_shop.model.dto.PageResponseDto;
 import com.ebudoskij.dessert_shop.model.dto.product.ProductCreateDto;
+import com.ebudoskij.dessert_shop.model.dto.product.ProductUpdateDto;
 import com.ebudoskij.dessert_shop.model.enums.UnitType;
 import com.ebudoskij.dessert_shop.service.CategoryService;
 import com.ebudoskij.dessert_shop.service.ProductService;
@@ -75,11 +76,19 @@ public class ProductController {
         return "redirect:/products";
     }
 
+    @GetMapping("/{id}/update")
+    public String updateProductPage(@PathVariable Long id, Model model){
+        model.addAttribute("productResponse", productService.getToUpdate(id));
+        model.addAttribute("product", new ProductUpdateDto());
+        model.addAttribute("categories", categoryService.getAll());
+        model.addAttribute("unitTypes", UnitType.values());
 
+        return "product/newProduct";
+    }
 
     @PutMapping("/{id}")
     public String updateById(@PathVariable Long id,
-                             @ModelAttribute("product") @Valid ProductCreateDto dto,
+                             @ModelAttribute("product") @Valid ProductUpdateDto dto,
                              BindingResult bindingResult,
                              Model model){
         if (bindingResult.hasErrors()) {
