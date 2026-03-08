@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Редагувати Продукт - Магазин Десертів</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+
+<div th:replace="~{fragments/navbar :: navbar}"></div>
+
+<div class="container">
+    <div class="page-header">
+        <h1>Редагувати Продукт</h1>
+        <a th:href="@{/products}" class="btn btn-secondary">Повернутися до Продуктів</a>
+    </div>
+
+    <div class="form-card">
+        <form th:action="@{/products/{id}(id=${id})}" th:object="${product}" method="post" enctype="multipart/form-data">
+            <input type="hidden" name="_method" value="put" />
+            
+            <div class="form-group">
+                <label for="name">Назва</label>
+                <input type="text" id="name" th:field="*{name}" class="form-control" />
+                <span th:if="${#fields.hasErrors('name')}" th:errors="*{name}" class="text-danger">Помилка назви</span>
+            </div>
+
+            <div class="form-group">
+                <label for="description">Опис</label>
+                <textarea id="description" th:field="*{description}" class="form-control" rows="4"></textarea>
+                <span th:if="${#fields.hasErrors('description')}" th:errors="*{description}" class="text-danger">Помилка опису</span>
+            </div>
+
+            <div class="form-group">
+                <label for="pricePerUnit">Ціна за одиницю</label>
+                <input type="number" id="pricePerUnit" th:field="*{pricePerUnit}" class="form-control" step="0.01" />
+                <span th:if="${#fields.hasErrors('pricePerUnit')}" th:errors="*{pricePerUnit}" class="text-danger">Помилка ціни</span>
+            </div>
+
+            <div class="form-group">
+                <label for="categoryId">Категорія</label>
+                <select id="categoryId" th:field="*{categoryId}" class="form-control">
+                    <option th:each="cat : ${categories}" th:value="${cat.id}" th:text="${cat.name}"></option>
+                </select>
+                <span th:if="${#fields.hasErrors('categoryId')}" th:errors="*{categoryId}" class="text-danger">Помилка категорії</span>
+            </div>
+
+            <div class="form-group">
+                <label for="unitType">Одиниця виміру</label>
+                <select id="unitType" th:field="*{unitType}" class="form-control">
+                    <option th:each="unit : ${unitTypes}" th:value="${unit}" th:text="${unit}"></option>
+                </select>
+                <span th:if="${#fields.hasErrors('unitType')}" th:errors="*{unitType}" class="text-danger">Помилка одиниці виміру</span>
+            </div>
+
+            <div class="form-group" th:if="${productResponse.imageUrls != null and !productResponse.imageUrls.isEmpty()}">
+                <label>Існуючі зображення (Виберіть, щоб видалити)</label>
+                <div class="d-flex flex-wrap gap-3 mt-2">
+                    <div th:each="img : ${productResponse.imageUrls}" class="text-center">
+                        <img th:src="@{${img.url}}" alt="Product Image" style="max-height: 100px; border-radius: 5px; border: 1px solid #ccc; display: block; margin-bottom: 5px;"/>
+                        <input type="checkbox" th:field="*{deletedImageIds}" th:value="${img.id}" /> Видалити
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="images">Нові зображення</label>
+                <input type="file" id="images" name="images" class="form-control" multiple accept="image/*" />
+            </div>
+
+            <div class="mt-3">
+                <button type="submit" class="btn btn-primary">Оновити Продукт</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Order Details - Dessert Shop</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+
+<div th:replace="~{fragments/navbar :: navbar}"></div>
+
+<div class="container">
+    <div class="page-header">
+        <h1>Order Details (#<span th:text="${response.id}">1</span>)</h1>
+        <div>
+            <a th:href="@{/orders/{id}/update(id=${response.id})}" class="btn btn-primary">Edit Order</a>
+            <a th:href="@{/orders}" class="btn btn-secondary">Back to Orders</a>
+        </div>
+    </div>
+
+    <div class="detail-card mb-3">
+        <div class="detail-row">
+            <div class="detail-label">Status</div>
+            <div class="detail-value" th:text="${response.status.statusName}">Status</div>
+        </div>
+        <div class="detail-row">
+            <div class="detail-label">Delivery Address</div>
+            <div class="detail-value" th:text="${response.deliveryAddress}">Address</div>
+        </div>
+        <div class="detail-row">
+            <div class="detail-label">Delivery Date</div>
+            <div class="detail-value" th:text="${#calendars.format(response.deliveryDate, 'yyyy-MM-dd HH:mm')}">Date</div>
+        </div>
+        <div class="detail-row">
+            <div class="detail-label">Created At</div>
+            <div class="detail-value" th:text="${#calendars.format(response.createdAt, 'yyyy-MM-dd HH:mm')}">Date</div>
+        </div>
+        <div class="detail-row">
+            <div class="detail-label">Is Deleted</div>
+            <div class="detail-value">
+                <span th:if="${response.isDeleted}" class="text-danger">Yes</span>
+                <span th:unless="${response.isDeleted}">No</span>
+            </div>
+        </div>
+    </div>
+
+    <h2>Order Items</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Product</th>
+                <th>Quantity</th>
+                <th>Unit Price</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr th:each="item : ${response.items}">
+                <td th:text="${item.product.name}">Product Name</td>
+                <td th:text="${item.quantity}">2</td>
+                <td th:text="${'$' + #numbers.formatDecimal(item.unitPrice, 1, 2)}">$10.00</td>
+            </tr>
+            <tr th:if="${#lists.isEmpty(response.items)}">
+                <td colspan="3" class="text-center">No items in this order.</td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+</body>
+</html>

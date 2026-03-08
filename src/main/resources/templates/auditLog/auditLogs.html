@@ -1,10 +1,72 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-    <title>Title</title>
+    <title>Журнал Аудиту - Магазин Десертів</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
 </head>
 <body>
+
+<div th:replace="~{fragments/navbar :: navbar}"></div>
+
+<div class="container">
+    <div class="page-header">
+        <h1>Журнал Аудиту</h1>
+    </div>
+
+    <!-- Search Form -->
+    <div class="mb-3">
+        <form th:action="@{/}" method="get" class="flex gap-2">
+            <input type="text" name="searchQuery" th:value="${searchQuery}" placeholder="Пошук у журналі..." class="form-control" style="max-width: 300px;"/>
+            <button type="submit" class="btn btn-secondary">Пошук</button>
+            <a th:href="@{/}" class="btn btn-primary" th:if="${searchQuery != null and !searchQuery.isEmpty()}">Очистити</a>
+            <input type="hidden" name="sortBy" th:value="${sortBy}"/>
+            <input type="hidden" name="sortDir" th:value="${sortDir}"/>
+            <input type="hidden" name="size" th:value="${pageResponse.pageSize}"/>
+        </form>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Тип журналу</th>
+                <th>Тип дії</th>
+                <th>Деталі</th>
+                <th>Створено</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr th:each="log : ${pageResponse.content}">
+                <td th:text="${log.id}">1</td>
+                <td th:text="${log.logType}">SYSTEM</td>
+                <td th:text="${log.actionType}">CREATE</td>
+                <td th:text="${log.details}">Details...</td>
+                <td th:text="${#calendars.format(log.createdAt, 'yyyy-MM-dd HH:mm:ss')}">2023-10-27 10:00:00</td>
+            </tr>
+            <tr th:if="${#lists.isEmpty(pageResponse.content)}">
+                <td colspan="5" class="text-center">Записів не знайдено.</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <!-- Pagination -->
+    <div th:if="${pageResponse.totalPages > 1}">
+        <ul class="pagination">
+            <li class="page-item" th:classappend="${pageResponse.last ? 'disabled' : ''}">
+                <a class="page-link" th:href="@{/(page=${pageResponse.pageNo - 1}, size=${pageResponse.pageSize}, sortBy=${sortBy}, sortDir=${sortDir}, searchQuery=${searchQuery})}" th:if="${!pageResponse.last}">Попередня</a>
+            </li>
+            
+            <li class="page-item" th:each="i : ${#numbers.sequence(0, pageResponse.totalPages - 1)}" th:classappend="${pageResponse.pageNo == i ? 'active' : ''}">
+                <a class="page-link" th:href="@{/(page=${i}, size=${pageResponse.pageSize}, sortBy=${sortBy}, sortDir=${sortDir}, searchQuery=${searchQuery})}" th:text="${i + 1}">1</a>
+            </li>
+
+            <li class="page-item" th:classappend="${pageResponse.last ? 'disabled' : ''}">
+                <a class="page-link" th:href="@{/(page=${pageResponse.pageNo + 1}, size=${pageResponse.pageSize}, sortBy=${sortBy}, sortDir=${sortDir}, searchQuery=${searchQuery})}" th:if="${!pageResponse.last}">Наступна</a>
+            </li>
+        </ul>
+    </div>
+</div>
 
 </body>
 </html>

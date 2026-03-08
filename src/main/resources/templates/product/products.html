@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Продукти - Магазин Десертів</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+
+<div th:replace="~{fragments/navbar :: navbar}"></div>
+
+<div class="container">
+    <div class="page-header">
+        <h1>Продукти</h1>
+        <a th:href="@{/products/add}" class="btn btn-primary">Додати Новий Продукт</a>
+    </div>
+
+    <!-- Search Form -->
+    <div class="mb-3">
+        <form th:action="@{/products}" method="get" class="flex gap-2">
+            <input type="text" name="searchQuery" th:value="${searchQuery}" placeholder="Пошук продуктів..." class="form-control" style="max-width: 300px;"/>
+            <button type="submit" class="btn btn-secondary">Пошук</button>
+            <a th:href="@{/products}" class="btn btn-primary" th:if="${searchQuery != null and !searchQuery.isEmpty()}">Очистити</a>
+            <input type="hidden" name="sortBy" th:value="${sortBy}"/>
+            <input type="hidden" name="sortDir" th:value="${sortDir}"/>
+            <input type="hidden" name="size" th:value="${pageResponse.pageSize}"/>
+        </form>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Назва</th>
+                <th>Категорія</th>
+                <th>Ціна</th>
+                <th>Одиниця виміру</th>
+                <th>Дії</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr th:each="product : ${pageResponse.content}">
+                <td th:text="${product.id}">1</td>
+                <td th:text="${product.name}">Product Name</td>
+                <td th:text="${product.category.name}">Category</td>
+                <td th:text="${#numbers.formatDecimal(product.pricePerUnit, 1, 2)}">10.00</td>
+                <td th:text="${product.unitType}">Unit</td>
+                <td class="actions">
+                    <a th:href="@{/products/{id}(id=${product.id})}" class="btn btn-sm btn-secondary">Переглянути</a>
+                    <a th:href="@{/products/{id}/update(id=${product.id})}" class="btn btn-sm btn-primary">Редагувати</a>
+                    <form th:action="@{/products/{id}(id=${product.id})}" th:method="delete" style="display: inline;">
+                        <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Ви впевнені, що хочете видалити цей продукт?');">Видалити</button>
+                    </form>
+                </td>
+            </tr>
+            <tr th:if="${#lists.isEmpty(pageResponse.content)}">
+                <td colspan="6" class="text-center">Продуктів не знайдено.</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <!-- Pagination -->
+    <div th:if="${pageResponse.totalPages > 1}">
+        <ul class="pagination">
+            <li class="page-item" th:classappend="${pageResponse.last ? 'disabled' : ''}">
+                <a class="page-link" th:href="@{/products(page=${pageResponse.pageNo - 1}, size=${pageResponse.pageSize}, sortBy=${sortBy}, sortDir=${sortDir}, searchQuery=${searchQuery})}" th:if="${!pageResponse.last}">Попередня</a>
+            </li>
+            
+            <li class="page-item" th:each="i : ${#numbers.sequence(0, pageResponse.totalPages - 1)}" th:classappend="${pageResponse.pageNo == i ? 'active' : ''}">
+                <a class="page-link" th:href="@{/products(page=${i}, size=${pageResponse.pageSize}, sortBy=${sortBy}, sortDir=${sortDir}, searchQuery=${searchQuery})}" th:text="${i + 1}">1</a>
+            </li>
+
+            <li class="page-item" th:classappend="${pageResponse.last ? 'disabled' : ''}">
+                <a class="page-link" th:href="@{/products(page=${pageResponse.pageNo + 1}, size=${pageResponse.pageSize}, sortBy=${sortBy}, sortDir=${sortDir}, searchQuery=${searchQuery})}" th:if="${!pageResponse.last}">Наступна</a>
+            </li>
+        </ul>
+    </div>
+</div>
+
+</body>
+</html>

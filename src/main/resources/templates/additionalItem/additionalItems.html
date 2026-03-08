@@ -1,10 +1,78 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-    <title>Title</title>
+    <title>Додатки - Магазин Десертів</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
 </head>
 <body>
+
+<div th:replace="~{fragments/navbar :: navbar}"></div>
+
+<div class="container">
+    <div class="page-header">
+        <h1>Додатки</h1>
+        <a th:href="@{/extras/add}" class="btn btn-primary">Додати Новий Додаток</a>
+    </div>
+
+    <!-- Search Form -->
+    <div class="mb-3">
+        <form th:action="@{/extras}" method="get" class="flex gap-2">
+            <input type="text" name="searchQuery" th:value="${searchQuery}" placeholder="Пошук додатків..." class="form-control" style="max-width: 300px;"/>
+            <button type="submit" class="btn btn-secondary">Пошук</button>
+            <a th:href="@{/extras}" class="btn btn-primary" th:if="${searchQuery != null and !searchQuery.isEmpty()}">Очистити</a>
+            <input type="hidden" name="sortBy" th:value="${sortBy}"/>
+            <input type="hidden" name="sortDir" th:value="${sortDir}"/>
+            <input type="hidden" name="size" th:value="${pageResponse.pageSize}"/>
+        </form>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Назва</th>
+                <th>Ціна додатку</th>
+                <th>Дії</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr th:each="item : ${pageResponse.content}">
+                <td th:text="${item.id}">1</td>
+                <td th:text="${item.name}">Extra Name</td>
+                <td th:text="${#numbers.formatDecimal(item.extraPrice, 1, 2)}">5.00</td>
+                <td class="actions">
+                    <a th:href="@{/extras/{id}(id=${item.id})}" class="btn btn-sm btn-secondary">Переглянути</a>
+                    <a th:href="@{/extras/{id}/update(id=${item.id})}" class="btn btn-sm btn-primary">Редагувати</a>
+                    <form th:action="@{/extras/{id}(id=${item.id})}" method="post" style="display: inline;">
+                        <input type="hidden" name="_method" value="delete" />
+                        <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Ви впевнені, що хочете видалити цей елемент?');">Видалити</button>
+                    </form>
+                </td>
+            </tr>
+            <tr th:if="${#lists.isEmpty(pageResponse.content)}">
+                <td colspan="4" class="text-center">Додатків не знайдено.</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <!-- Pagination -->
+    <div th:if="${pageResponse.totalPages > 1}">
+        <ul class="pagination">
+            <li class="page-item" th:classappend="${pageResponse.last ? 'disabled' : ''}">
+                <a class="page-link" th:href="@{/extras(page=${pageResponse.pageNo - 1}, size=${pageResponse.pageSize}, sortBy=${sortBy}, sortDir=${sortDir}, searchQuery=${searchQuery})}" th:if="${!pageResponse.last}">Попередня</a>
+            </li>
+            
+            <li class="page-item" th:each="i : ${#numbers.sequence(0, pageResponse.totalPages - 1)}" th:classappend="${pageResponse.pageNo == i ? 'active' : ''}">
+                <a class="page-link" th:href="@{/extras(page=${i}, size=${pageResponse.pageSize}, sortBy=${sortBy}, sortDir=${sortDir}, searchQuery=${searchQuery})}" th:text="${i + 1}">1</a>
+            </li>
+
+            <li class="page-item" th:classappend="${pageResponse.last ? 'disabled' : ''}">
+                <a class="page-link" th:href="@{/extras(page=${pageResponse.pageNo + 1}, size=${pageResponse.pageSize}, sortBy=${sortBy}, sortDir=${sortDir}, searchQuery=${searchQuery})}" th:if="${!pageResponse.last}">Наступна</a>
+            </li>
+        </ul>
+    </div>
+</div>
 
 </body>
 </html>

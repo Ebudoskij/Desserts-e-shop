@@ -1,10 +1,57 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-    <title>Title</title>
+    <title>Extra Details - Dessert Shop</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
 </head>
 <body>
+
+<div th:replace="~{fragments/navbar :: navbar}"></div>
+
+<div class="container">
+    <div class="page-header">
+        <h1>Extra Item Details</h1>
+        <div>
+            <a th:href="@{/extras/{id}/update(id=${response.id})}" class="btn btn-primary">Edit Item</a>
+            <a th:href="@{/extras}" class="btn btn-secondary">Back to Extras</a>
+        </div>
+    </div>
+
+    <div class="detail-card">
+        <div class="detail-row">
+            <div class="detail-label">ID</div>
+            <div class="detail-value" th:text="${response.id}">1</div>
+        </div>
+        <div class="detail-row">
+            <div class="detail-label">Name</div>
+            <div class="detail-value" th:text="${response.name}">Name</div>
+        </div>
+        <div class="detail-row">
+            <div class="detail-label">Description</div>
+            <div class="detail-value" th:text="${response.description}">Description</div>
+        </div>
+        <div class="detail-row">
+            <div class="detail-label">Extra Price</div>
+            <div class="detail-value" th:text="${'$' + #numbers.formatDecimal(response.extraPrice, 1, 2)}">$5.00</div>
+        </div>
+        <div class="detail-row">
+            <div class="detail-label">Status</div>
+            <div class="detail-value">
+                <span th:if="${response.isDeleted}" class="text-danger">Deleted</span>
+                <span th:unless="${response.isDeleted}">Active</span>
+            </div>
+        </div>
+        <div class="detail-row" th:if="${response.imageUrls != null and !response.imageUrls.isEmpty()}">
+            <div class="detail-label">Images</div>
+            <div class="detail-value d-flex flex-wrap gap-2">
+                <div th:each="img : ${response.imageUrls}">
+                    <img th:src="@{${img.url}}" alt="Extra Image" style="max-height: 150px; border-radius: 5px; border: 1px solid #ccc;"/>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 
 </body>
 </html>

@@ -16,6 +16,9 @@ import java.util.List;
 @Setter
 public class ProductResponseDto {
     @NotNull
+    private Long id;
+
+    @NotNull
     private Category category;
 
     @NotBlank

@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Замовлення - Магазин Десертів</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+
+<div th:replace="~{fragments/navbar :: navbar}"></div>
+
+<div class="container">
+    <div class="page-header">
+        <h1>Замовлення</h1>
+        <a th:href="@{/orders/add}" class="btn btn-primary">Створити Нове Замовлення</a>
+    </div>
+
+    <!-- Search Form -->
+    <div class="mb-3">
+        <form th:action="@{/orders}" method="get" class="flex gap-2">
+            <input type="text" name="searchQuery" th:value="${searchQuery}" placeholder="Пошук адреси доставки..." class="form-control" style="max-width: 300px;"/>
+            <button type="submit" class="btn btn-secondary">Пошук</button>
+            <a th:href="@{/orders}" class="btn btn-primary" th:if="${searchQuery != null and !searchQuery.isEmpty()}">Очистити</a>
+            <input type="hidden" name="sortBy" th:value="${sortBy}"/>
+            <input type="hidden" name="sortDir" th:value="${sortDir}"/>
+            <input type="hidden" name="size" th:value="${pageResponse.pageSize}"/>
+        </form>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Статус</th>
+                <th>Адреса доставки</th>
+                <th>Дата доставки</th>
+                <th>Дії</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr th:each="order : ${pageResponse.content}">
+                <td th:text="${order.id}">1</td>
+                <td th:text="${order.status.statusName}">PENDING</td>
+                <td th:text="${order.deliveryAddress}">123 Main St</td>
+                <td th:text="${#calendars.format(order.deliveryDate, 'yyyy-MM-dd HH:mm')}">2023-10-27</td>
+                <td class="actions">
+                    <a th:href="@{/orders/{id}(id=${order.id})}" class="btn btn-sm btn-secondary">Переглянути</a>
+                    <a th:href="@{/orders/{id}/update(id=${order.id})}" class="btn btn-sm btn-primary">Редагувати</a>
+                    <form th:action="@{/orders/{id}(id=${order.id})}" method="post" style="display: inline;">
+                        <input type="hidden" name="_method" value="delete" />
+                        <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Ви впевнені, що хочете видалити це замовлення?');">Видалити</button>
+                    </form>
+                </td>
+            </tr>
+            <tr th:if="${#lists.isEmpty(pageResponse.content)}">
+                <td colspan="5" class="text-center">Замовлень не знайдено.</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <!-- Pagination -->
+    <div th:if="${pageResponse.totalPages > 1}">
+        <ul class="pagination">
+            <li class="page-item" th:classappend="${pageResponse.last ? 'disabled' : ''}">
+                <a class="page-link" th:href="@{/orders(page=${pageResponse.pageNo - 1}, size=${pageResponse.pageSize}, sortBy=${sortBy}, sortDir=${sortDir}, searchQuery=${searchQuery})}" th:if="${!pageResponse.last}">Попередня</a>
+            </li>
+            
+            <li class="page-item" th:each="i : ${#numbers.sequence(0, pageResponse.totalPages - 1)}" th:classappend="${pageResponse.pageNo == i ? 'active' : ''}">
+                <a class="page-link" th:href="@{/orders(page=${i}, size=${pageResponse.pageSize}, sortBy=${sortBy}, sortDir=${sortDir}, searchQuery=${searchQuery})}" th:text="${i + 1}">1</a>
+            </li>
+
+            <li class="page-item" th:classappend="${pageResponse.last ? 'disabled' : ''}">
+                <a class="page-link" th:href="@{/orders(page=${pageResponse.pageNo + 1}, size=${pageResponse.pageSize}, sortBy=${sortBy}, sortDir=${sortDir}, searchQuery=${searchQuery})}" th:if="${!pageResponse.last}">Наступна</a>
+            </li>
+        </ul>
+    </div>
+</div>
+
+</body>
+</html>

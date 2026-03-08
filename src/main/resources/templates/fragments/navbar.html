@@ -1,0 +1,10 @@
+<nav class="navbar" xmlns:th="http://www.thymeleaf.org" th:fragment="navbar">
+    <a th:href="@{/}" class="navbar-brand">Магазин Десертів</a>
+    <ul class="navbar-nav">
+        <li><a th:href="@{/products}" class="nav-link" th:classappend="${#execInfo.templateName.startsWith('product')} ? 'active'">Продукти</a></li>
+        <li><a th:href="@{/categories}" class="nav-link" th:classappend="${#execInfo.templateName.startsWith('category')} ? 'active'">Категорії</a></li>
+        <li><a th:href="@{/orders}" class="nav-link" th:classappend="${#execInfo.templateName.startsWith('order')} ? 'active'">Замовлення</a></li>
+        <li><a th:href="@{/extras}" class="nav-link" th:classappend="${#execInfo.templateName.startsWith('additionalItem')} ? 'active'">Додатки</a></li>
+        <li><a th:href="@{/auditLog}" class="nav-link" th:classappend="${#execInfo.templateName.startsWith('auditLog') or #execInfo.templateName == 'index'} ? 'active'">Аудит</a></li>
+    </ul>
+</nav>
