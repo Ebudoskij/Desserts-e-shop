@@ -1,6 +1,7 @@
 package com.ebudoskij.dessert_shop.controller;
 
 import com.ebudoskij.dessert_shop.model.dto.PageResponseDto;
+import com.ebudoskij.dessert_shop.model.dto.product.ProductCardDto;
 import com.ebudoskij.dessert_shop.model.dto.product.ProductCreateDto;
 import com.ebudoskij.dessert_shop.model.dto.product.ProductResponseDto;
 import com.ebudoskij.dessert_shop.model.dto.product.ProductUpdateDto;
@@ -28,13 +29,16 @@ public class ProductController {
                                            @RequestParam(required = false, defaultValue = "id") String sortBy,
                                            @RequestParam(required = false, defaultValue = "asc") String sortDir,
                                            @RequestParam(required = false) String searchQuery,
+                                           @RequestParam(required = false, defaultValue = "false") Boolean deleted,
                                            Model model){
-        PageResponseDto<ProductResponseDto> response = productService.getAll(
+        PageResponseDto<ProductCardDto> response = productService.getAll(
                 page,
                 size,
                 sortBy,
                 sortDir,
-                searchQuery);
+                searchQuery,
+                deleted
+        );
 
         model.addAttribute("pageResponse", response);
         model.addAttribute("sortBy", sortBy);

@@ -1,20 +1,22 @@
 package com.ebudoskij.dessert_shop.model.dto.product;
 
 import com.ebudoskij.dessert_shop.model.Category;
-import com.ebudoskij.dessert_shop.model.dto.media.MediaResponseDto;
 import com.ebudoskij.dessert_shop.model.enums.UnitType;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.math.BigDecimal;
-import java.util.List;
 
 @Getter
 @Setter
-public class ProductResponseDto {
+@AllArgsConstructor
+@NoArgsConstructor
+public class ProductCardDto {
     @NotNull
     private Long id;
 
@@ -24,15 +26,11 @@ public class ProductResponseDto {
     @NotBlank
     private String name;
 
-    private String description;
-
     @Positive
     private BigDecimal pricePerUnit;
 
     @NotNull
     private UnitType unitType;
 
-    private List<MediaResponseDto> images;
-
-    private Boolean isDeleted;
+    private String mainImageUrl;
 }

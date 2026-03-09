@@ -1,6 +1,8 @@
 package com.ebudoskij.dessert_shop.service.impl;
 
+import com.ebudoskij.dessert_shop.mapper.MediaMapper;
 import com.ebudoskij.dessert_shop.model.Media;
+import com.ebudoskij.dessert_shop.model.dto.media.MediaResponseDto;
 import com.ebudoskij.dessert_shop.repository.MediaRepository;
 import com.ebudoskij.dessert_shop.service.MediaService;
 import lombok.RequiredArgsConstructor;
@@ -20,6 +22,7 @@ import java.util.UUID;
 public class MediaServiceImpl implements MediaService {
 
     private final MediaRepository mediaRepository;
+    private final MediaMapper mediaMapper;
 
     @Value("${upload.path:uploads}")
     private String uploadPath;
@@ -73,7 +76,9 @@ public class MediaServiceImpl implements MediaService {
     }
 
     @Override
-    public List<Media> getEntityImages(String entityType, Long entityId) {
-        return mediaRepository.findByEntityTypeAndEntityIdOrderByPriorityAsc(entityType, entityId);
+    public List<MediaResponseDto> getEntityImages(String entityType, Long entityId) {
+        return mediaRepository.findByEntityTypeAndEntityIdOrderByPriorityAsc(entityType, entityId).stream()
+                .map(mediaMapper::toDto)
+                .toList();
     }
 }

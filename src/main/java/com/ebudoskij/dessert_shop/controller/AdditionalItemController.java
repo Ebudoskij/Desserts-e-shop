@@ -1,6 +1,7 @@
 package com.ebudoskij.dessert_shop.controller;
 
 import com.ebudoskij.dessert_shop.model.dto.PageResponseDto;
+import com.ebudoskij.dessert_shop.model.dto.additionalItem.AdditionalItemCardDto;
 import com.ebudoskij.dessert_shop.model.dto.additionalItem.AdditionalItemCreateDto;
 import com.ebudoskij.dessert_shop.model.dto.additionalItem.AdditionalItemResponseDto;
 import com.ebudoskij.dessert_shop.model.dto.additionalItem.AdditionalItemUpdateDto;
@@ -27,13 +28,16 @@ public class AdditionalItemController {
                            @RequestParam(required = false, defaultValue = "id") String sortBy,
                            @RequestParam(required = false, defaultValue = "asc") String sortDir,
                            @RequestParam(required = false) String searchQuery,
+                           @RequestParam(required = false, defaultValue = "false") Boolean deleted,
                            Model model){
-        PageResponseDto<AdditionalItemResponseDto> response = additionalItemService.getAll(
+        PageResponseDto<AdditionalItemCardDto> response = additionalItemService.getAll(
                 page,
                 size,
                 sortBy,
                 sortDir,
-                searchQuery);
+                searchQuery,
+                deleted
+        );
 
         model.addAttribute("pageResponse", response);
         model.addAttribute("sortBy", sortBy);

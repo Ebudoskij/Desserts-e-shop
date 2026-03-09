@@ -36,7 +36,7 @@
                     <a th:href="@{/categories/{id}/update(id=${category.id})}" class="btn btn-sm btn-primary">Редагувати</a>
                     <form th:action="@{/categories/{id}(id=${category.id})}" method="post" style="display: inline;">
                         <input type="hidden" name="_method" value="delete" />
-                        <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Ви впевнені, що хочете видалити цю категорію?');">Видалити</button>
+                        <button type="button" class="btn btn-sm btn-danger" onclick="openConfirmModal(this.closest('form'), 'Ви впевнені, що хочете видалити цю категорію?');">Видалити</button>
                     </form>
                 </td>
             </tr>
@@ -46,6 +46,9 @@
         </tbody>
     </table>
 </div>
+
+<div th:replace="~{fragments/modal :: confirmModal}"></div>
+<div th:replace="~{fragments/modal :: confirmModalScript}"></div>
 
 </body>
 </html>

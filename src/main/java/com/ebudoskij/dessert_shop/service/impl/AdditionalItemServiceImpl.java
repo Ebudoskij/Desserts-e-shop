@@ -4,12 +4,14 @@ import com.ebudoskij.dessert_shop.exception.EntityNotFoundException;
 import com.ebudoskij.dessert_shop.mapper.AdditionalItemMapper;
 import com.ebudoskij.dessert_shop.model.AdditionalItem;
 import com.ebudoskij.dessert_shop.model.dto.PageResponseDto;
+import com.ebudoskij.dessert_shop.model.dto.additionalItem.AdditionalItemCardDto;
 import com.ebudoskij.dessert_shop.model.dto.additionalItem.AdditionalItemCreateDto;
 import com.ebudoskij.dessert_shop.model.dto.additionalItem.AdditionalItemResponseDto;
 import com.ebudoskij.dessert_shop.model.dto.additionalItem.AdditionalItemUpdateDto;
 import com.ebudoskij.dessert_shop.repository.AdditionalItemRepository;
 import com.ebudoskij.dessert_shop.service.AdditionalItemService;
 import com.ebudoskij.dessert_shop.service.MediaService;
+import com.ebudoskij.dessert_shop.utils.specifications.AdditionalItemSpecificationUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -26,41 +28,27 @@ public class AdditionalItemServiceImpl implements AdditionalItemService {
     private final MediaService mediaService;
 
     @Override
-    public PageResponseDto<AdditionalItemResponseDto> getAll(int page, int size, String sortBy, String sortDir, String searchQuery) {
+    public PageResponseDto<AdditionalItemCardDto> getAll(int page, 
+                                                         int size, 
+                                                         String sortBy, 
+                                                         String sortDir, 
+                                                         String searchQuery,
+                                                         Boolean deleted) {
         Sort sort = sortDir.equalsIgnoreCase(Sort.Direction.ASC.name()) ? Sort.by(sortBy).ascending()
                 : Sort.by(sortBy).descending();
         PageRequest pageRequest = PageRequest.of(page, size, sort);
 
-        Specification<AdditionalItem> spec = (root, query, criteriaBuilder) -> {
-            Specification<AdditionalItem> notDeletedSpec = (r, q, cb) -> cb.isFalse(r.get("isDeleted"));
+        Specification<AdditionalItem> spec = AdditionalItemSpecificationUtil.buildFilters(searchQuery, deleted);
 
-            if (searchQuery == null || searchQuery.trim().isEmpty()) {
-                return notDeletedSpec.toPredicate(root, query, criteriaBuilder);
-            }
+        Page<AdditionalItemCardDto> additionalItemPage = additionalItemRepository.findAdditionalItemCards(spec, pageRequest);
 
-            String pattern = "%" + searchQuery.toLowerCase() + "%";
-            Specification<AdditionalItem> searchSpec = (r, q, cb) -> cb.or(
-                    cb.like(cb.lower(r.get("name")), pattern),
-                    cb.like(cb.lower(r.get("description")), pattern)
-            );
-
-            return criteriaBuilder.and(
-                    notDeletedSpec.toPredicate(root, query, criteriaBuilder),
-                    searchSpec.toPredicate(root, query, criteriaBuilder)
-            );
-        };
-
-        Page<AdditionalItem> itemPage = additionalItemRepository.findAll(spec, pageRequest);
-        
-        PageResponseDto<AdditionalItemResponseDto> response = new PageResponseDto<>();
-        response.setContent(itemPage.getContent().stream()
-                .map(additionalItemMapper::toDto)
-                .toList());
-        response.setPageNo(itemPage.getNumber());
-        response.setPageSize(itemPage.getSize());
-        response.setTotalElements(itemPage.getTotalElements());
-        response.setTotalPages(itemPage.getTotalPages());
-        response.setLast(itemPage.isLast());
+        PageResponseDto<AdditionalItemCardDto> response = new PageResponseDto<>();
+        response.setContent(additionalItemPage.getContent());
+        response.setPageNo(additionalItemPage.getNumber());
+        response.setPageSize(additionalItemPage.getSize());
+        response.setTotalElements(additionalItemPage.getTotalElements());
+        response.setTotalPages(additionalItemPage.getTotalPages());
+        response.setLast(additionalItemPage.isLast());
 
         return response;
     }

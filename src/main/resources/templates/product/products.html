@@ -27,37 +27,41 @@
         </form>
     </div>
 
-    <table>
-        <thead>
-            <tr>
-                <th>ID</th>
-                <th>Назва</th>
-                <th>Категорія</th>
-                <th>Ціна</th>
-                <th>Одиниця виміру</th>
-                <th>Дії</th>
-            </tr>
-        </thead>
-        <tbody>
-            <tr th:each="product : ${pageResponse.content}">
-                <td th:text="${product.id}">1</td>
-                <td th:text="${product.name}">Product Name</td>
-                <td th:text="${product.category.name}">Category</td>
-                <td th:text="${#numbers.formatDecimal(product.pricePerUnit, 1, 2)}">10.00</td>
-                <td th:text="${product.unitType}">Unit</td>
-                <td class="actions">
-                    <a th:href="@{/products/{id}(id=${product.id})}" class="btn btn-sm btn-secondary">Переглянути</a>
-                    <a th:href="@{/products/{id}/update(id=${product.id})}" class="btn btn-sm btn-primary">Редагувати</a>
-                    <form th:action="@{/products/{id}(id=${product.id})}" th:method="delete" style="display: inline;">
-                        <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Ви впевнені, що хочете видалити цей продукт?');">Видалити</button>
+    <div class="product-grid" th:if="${not #lists.isEmpty(pageResponse.content)}" id="productGrid">
+        <div class="product-card" th:each="product : ${pageResponse.content}" th:data-url="@{/products/{id}(id=${product.id})}">
+            <div class="product-card-img-container">
+                <img th:if="${product.mainImageUrl != null and !product.mainImageUrl.isEmpty()}" th:src="${product.mainImageUrl}" alt="Зображення продукту" style="width: 100%; height: 100%; object-fit: cover;">
+                <span th:unless="${product.mainImageUrl != null and !product.mainImageUrl.isEmpty()}" style="color: #ccc;">Немає фото</span>
+            </div>
+            <div class="product-card-body">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                    <h3 class="product-card-title" th:text="${product.name}">Назва продукту</h3>
+                    <span style="font-size: 0.8rem; color: #999;" th:text="'#' + ${product.id}">#1</span>
+                </div>
+                <div class="product-card-category" th:text="${product.category.name}">Категорія</div>
+                
+                <div class="product-card-price">
+                    <span th:text="${#numbers.formatDecimal(product.pricePerUnit, 1, 2)}">10.00</span>
+                    <span style="font-size: 1rem; font-weight: normal; color: var(--text-color);" th:text="' ₴ / ' + ${product.unitType}">₴ / шт</span>
+                </div>
+                
+                <div class="product-card-actions">
+                    <button type="button" class="btn btn-sm btn-primary btn-icon-text action-btn" onclick="alert('Додано до кошика!');" title="Замовити">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" style="pointer-events: none;"><path d="M7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-2zM1 2v2h2l3.6 7.59-1.35 2.45c-.16.28-.25.61-.25.96 0 1.1.9 2 2 2h12v-2H7.42c-.14 0-.25-.11-.25-.25l.03-.12.9-1.63h7.45c.75 0 1.41-.41 1.75-1.03l3.58-6.49c.08-.14.12-.31.12-.48 0-.55-.45-1-1-1H5.21l-.94-2H1zm16 16c-1.1 0-1.99.9-1.99 2s.89 2 1.99 2 2-.9 2-2-.9-2-2-2z"/></svg>
+                        Замовити
+                    </button>
+                    <a th:href="@{/products/{id}/update(id=${product.id})}" class="btn btn-sm btn-secondary action-btn">Редагувати</a>
+                    <form th:action="@{/products/{id}(id=${product.id})}" th:method="delete" style="display: flex; margin: 0;">
+                        <button type="button" class="btn btn-sm btn-danger action-btn" onclick="openConfirmModal(this.closest('form'), 'Ви впевнені, що хочете видалити цей продукт?');">Видалити</button>
                     </form>
-                </td>
-            </tr>
-            <tr th:if="${#lists.isEmpty(pageResponse.content)}">
-                <td colspan="6" class="text-center">Продуктів не знайдено.</td>
-            </tr>
-        </tbody>
-    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div th:if="${#lists.isEmpty(pageResponse.content)}" class="text-center" style="margin: 3rem 0; padding: 2rem; background-color: var(--white); border-radius: 8px;">
+        <p style="font-size: 1.25rem; color: var(--light-brown);">Продуктів не знайдено.</p>
+    </div>
 
     <!-- Pagination -->
     <div th:if="${pageResponse.totalPages > 1}">
@@ -76,6 +80,31 @@
         </ul>
     </div>
 </div>
+
+<div th:replace="~{fragments/modal :: confirmModal}"></div>
+<div th:replace="~{fragments/modal :: confirmModalScript}"></div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const grid = document.getElementById('productGrid');
+        if (grid) {
+            grid.addEventListener('click', function(event) {
+                const card = event.target.closest('.product-card');
+                
+                if (!card) return;
+                
+                const isActionBtn = event.target.closest('.action-btn');
+                
+                if (!isActionBtn) {
+                    const url = card.getAttribute('data-url');
+                    if (url) {
+                        window.location.href = url;
+                    }
+                }
+            });
+        }
+    });
+</script>
 
 </body>
 </html>

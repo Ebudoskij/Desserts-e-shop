@@ -14,7 +14,7 @@ public interface ProductMapper {
     @Mapping(target = "category", ignore = true)
     Product toEntity(ProductCreateDto dto);
     
-    @Mapping(target = "imageUrls", ignore = true)
+    @Mapping(target = "images", ignore = true)
     ProductResponseDto toDto(Product entity);
     
     @Mapping(target = "category", ignore = true)

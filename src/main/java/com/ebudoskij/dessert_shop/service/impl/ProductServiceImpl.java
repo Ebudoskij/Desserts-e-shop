@@ -6,6 +6,7 @@ import com.ebudoskij.dessert_shop.model.Category;
 import com.ebudoskij.dessert_shop.model.Product;
 import com.ebudoskij.dessert_shop.model.dto.PageResponseDto;
 import com.ebudoskij.dessert_shop.model.dto.product.ProductCreateDto;
+import com.ebudoskij.dessert_shop.model.dto.product.ProductCardDto;
 import com.ebudoskij.dessert_shop.model.dto.product.ProductResponseDto;
 import com.ebudoskij.dessert_shop.model.dto.product.ProductUpdateDto;
 import com.ebudoskij.dessert_shop.model.dto.media.MediaResponseDto;
@@ -13,6 +14,7 @@ import com.ebudoskij.dessert_shop.repository.ProductRepository;
 import com.ebudoskij.dessert_shop.service.CategoryService;
 import com.ebudoskij.dessert_shop.service.MediaService;
 import com.ebudoskij.dessert_shop.service.ProductService;
+import com.ebudoskij.dessert_shop.utils.specifications.ProductSpecificationsUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -30,38 +32,23 @@ public class ProductServiceImpl implements ProductService {
     private final ProductMapper productMapper;
     private final CategoryService categoryService;
     private final MediaService mediaService;
-
     @Override
-    public PageResponseDto<ProductResponseDto> getAll(int page, int size, String sortBy, String sortDir, String searchQuery) {
+    public PageResponseDto<ProductCardDto> getAll(int page,
+                                                  int size,
+                                                  String sortBy,
+                                                  String sortDir,
+                                                  String searchQuery,
+                                                  Boolean deleted) {
         Sort sort = sortDir.equalsIgnoreCase(Sort.Direction.ASC.name()) ? Sort.by(sortBy).ascending()
                 : Sort.by(sortBy).descending();
         PageRequest pageRequest = PageRequest.of(page, size, sort);
 
-        Specification<Product> spec = (root, query, criteriaBuilder) -> {
-            Specification<Product> notDeletedSpec = (r, q, cb) -> cb.isFalse(r.get("isDeleted"));
+        Specification<Product> spec = ProductSpecificationsUtil.buildFilters(searchQuery, deleted);
 
-            if (searchQuery == null || searchQuery.trim().isEmpty()) {
-                return notDeletedSpec.toPredicate(root, query, criteriaBuilder);
-            }
+        Page<ProductCardDto> productPage = productRepository.findProductCards(spec, pageRequest);
 
-            String pattern = "%" + searchQuery.toLowerCase() + "%";
-            Specification<Product> searchSpec = (r, q, cb) -> cb.or(
-                    cb.like(cb.lower(r.get("name")), pattern),
-                    cb.like(cb.lower(r.get("description")), pattern)
-            );
-
-            return criteriaBuilder.and(
-                    notDeletedSpec.toPredicate(root, query, criteriaBuilder),
-                    searchSpec.toPredicate(root, query, criteriaBuilder)
-            );
-        };
-
-        Page<Product> productPage = productRepository.findAll(spec, pageRequest);
-        
-        PageResponseDto<ProductResponseDto> response = new PageResponseDto<>();
-        response.setContent(productPage.getContent().stream()
-                .map(productMapper::toDto)
-                .toList());
+        PageResponseDto<ProductCardDto> response = new PageResponseDto<>();
+        response.setContent(productPage.getContent());
         response.setPageNo(productPage.getNumber());
         response.setPageSize(productPage.getSize());
         response.setTotalElements(productPage.getTotalElements());
@@ -87,7 +74,7 @@ public class ProductServiceImpl implements ProductService {
                     return mediaDto;
                 })
                 .toList();
-        responseDto.setImageUrls(mediaDtos);
+        responseDto.setImages(mediaDtos);
 
         return responseDto;
     }
@@ -152,7 +139,7 @@ public class ProductServiceImpl implements ProductService {
                     return mediaDto;
                 })
                 .toList();
-        responseDto.setImageUrls(mediaDtos);
+        responseDto.setImages(mediaDtos);
 
         return responseDto;
     }

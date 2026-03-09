@@ -50,10 +50,10 @@
                 <span th:unless="${response.isDeleted}">Active</span>
             </div>
         </div>
-        <div class="detail-row" th:if="${response.imageUrls != null and !response.imageUrls.isEmpty()}">
+        <div class="detail-row" th:if="${response.images != null and !response.images.isEmpty()}">
             <div class="detail-label">Images</div>
             <div class="detail-value d-flex flex-wrap gap-2">
-                <div th:each="img : ${response.imageUrls}">
+                <div th:each="img : ${response.images}">
                     <img th:src="@{${img.url}}" alt="Product Image" style="max-height: 150px; border-radius: 5px; border: 1px solid #ccc;"/>
                 </div>
             </div>
