@@ -1,10 +1,54 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-    <title>Title</title>
+    <title>Категорії - Магазин Десертів</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
 </head>
 <body>
+
+<div th:replace="~{fragments/navbar :: navbar}"></div>
+
+<div class="container">
+    <div class="page-header">
+        <h1>Категорії</h1>
+        <a th:href="@{/categories/add}" class="btn btn-primary">Додати Нову Категорію</a>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Назва</th>
+                <th>Опис</th>
+                <th>Батьківська Категорія</th>
+                <th>Дії</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr th:each="category : ${response}">
+                <td th:text="${category.id}">1</td>
+                <td th:text="${category.name}">Category Name</td>
+                <td th:text="${category.description}">Description</td>
+                <td th:text="${category.parent != null ? category.parent.name : 'Немає'}">Parent</td>
+                <td class="actions">
+                    <a th:href="@{/categories/{id}(id=${category.id})}" class="btn btn-sm btn-secondary">Переглянути</a>
+                    <a th:href="@{/categories/{id}/update(id=${category.id})}" class="btn btn-sm btn-primary">Редагувати</a>
+                    <form th:action="@{/categories/{id}(id=${category.id})}" method="post" style="display: inline;">
+                        <input type="hidden" name="_method" value="delete" />
+                        <button type="button" class="btn btn-sm btn-danger" onclick="openConfirmModal(this.closest('form'), 'Ви впевнені, що хочете видалити цю категорію?');">Видалити</button>
+                    </form>
+                </td>
+            </tr>
+            <tr th:if="${#lists.isEmpty(response)}">
+                <td colspan="5" class="text-center">Категорій не знайдено.</td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+<div th:replace="~{fragments/modal :: confirmModal}"></div>
+<div th:replace="~{fragments/modal :: confirmModalScript}"></div>
 
 </body>
 </html>

@@ -1,10 +1,106 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-    <title>Title</title>
+    <title>Додатки - Магазин Десертів</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
 </head>
 <body>
+
+<div th:replace="~{fragments/navbar :: navbar}"></div>
+
+<div class="container">
+    <div class="page-header">
+        <h1>Додатки</h1>
+        <a th:href="@{/extras/add}" class="btn btn-primary">Додати Новий Додаток</a>
+    </div>
+
+    <!-- Search Form -->
+    <div class="mb-3">
+        <form th:action="@{/extras}" method="get" class="flex gap-2">
+            <input type="text" name="searchQuery" th:value="${searchQuery}" placeholder="Пошук додатків..." class="form-control" style="max-width: 300px;"/>
+            <button type="submit" class="btn btn-secondary">Пошук</button>
+            <a th:href="@{/extras}" class="btn btn-primary" th:if="${searchQuery != null and !searchQuery.isEmpty()}">Очистити</a>
+            <input type="hidden" name="sortBy" th:value="${sortBy}"/>
+            <input type="hidden" name="sortDir" th:value="${sortDir}"/>
+            <input type="hidden" name="size" th:value="${pageResponse.pageSize}"/>
+        </form>
+    </div>
+
+    <div class="product-grid" th:if="${not #lists.isEmpty(pageResponse.content)}" id="productGrid">
+        <div class="product-card" th:each="item : ${pageResponse.content}" th:data-url="@{/extras/{id}(id=${item.id})}">
+            <div class="product-card-img-container">
+                <img th:if="${item.mainImageUrl != null and !item.mainImageUrl.isEmpty()}" th:src="${item.mainImageUrl}" alt="Зображення продукту" style="width: 100%; height: 100%; object-fit: cover;">
+                <span th:unless="${item.mainImageUrl != null and !item.mainImageUrl.isEmpty()}" style="color: #ccc;">Немає фото</span>
+            </div>
+            <div class="product-card-body">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                    <h3 class="product-card-title" th:text="${item.name}">Назва додатку</h3>
+                    <span style="font-size: 0.8rem; color: #999;" th:text="'#' + ${item.id}">#1</span>
+                </div>
+                
+                <div class="product-card-price">
+                    <span th:text="${#numbers.formatDecimal(item.extraPrice, 1, 2)}">5.00</span>
+                    <span style="font-size: 1rem; font-weight: normal; color: var(--text-color);"> ₴</span>
+                </div>
+                
+                <div class="product-card-actions">
+                    <a th:href="@{/extras/{id}/update(id=${item.id})}" class="btn btn-sm btn-secondary action-btn">Редагувати</a>
+                    <form th:action="@{/extras/{id}(id=${item.id})}" method="post" style="display: flex; margin: 0;">
+                        <input type="hidden" name="_method" value="delete" />
+                        <button type="button" class="btn btn-sm btn-danger action-btn" onclick="openConfirmModal(this.closest('form'), 'Ви впевнені, що хочете видалити цей декор?');">Видалити</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div th:if="${#lists.isEmpty(pageResponse.content)}" class="text-center" style="margin: 3rem 0; padding: 2rem; background-color: var(--white); border-radius: 8px;">
+        <p style="font-size: 1.25rem; color: var(--light-brown);">Додатків не знайдено.</p>
+    </div>
+
+    <!-- Pagination -->
+    <div th:if="${pageResponse.totalPages > 1}">
+        <ul class="pagination">
+            <li class="page-item" th:classappend="${pageResponse.last ? 'disabled' : ''}">
+                <a class="page-link" th:href="@{/extras(page=${pageResponse.pageNo - 1}, size=${pageResponse.pageSize}, sortBy=${sortBy}, sortDir=${sortDir}, searchQuery=${searchQuery})}" th:if="${!pageResponse.last}">Попередня</a>
+            </li>
+            
+            <li class="page-item" th:each="i : ${#numbers.sequence(0, pageResponse.totalPages - 1)}" th:classappend="${pageResponse.pageNo == i ? 'active' : ''}">
+                <a class="page-link" th:href="@{/extras(page=${i}, size=${pageResponse.pageSize}, sortBy=${sortBy}, sortDir=${sortDir}, searchQuery=${searchQuery})}" th:text="${i + 1}">1</a>
+            </li>
+
+            <li class="page-item" th:classappend="${pageResponse.last ? 'disabled' : ''}">
+                <a class="page-link" th:href="@{/extras(page=${pageResponse.pageNo + 1}, size=${pageResponse.pageSize}, sortBy=${sortBy}, sortDir=${sortDir}, searchQuery=${searchQuery})}" th:if="${!pageResponse.last}">Наступна</a>
+            </li>
+        </ul>
+    </div>
+</div>
+
+<div th:replace="~{fragments/modal :: confirmModal}"></div>
+<div th:replace="~{fragments/modal :: confirmModalScript}"></div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const grid = document.getElementById('productGrid');
+        if (grid) {
+            grid.addEventListener('click', function(event) {
+                const card = event.target.closest('.product-card');
+                
+                if (!card) return;
+                
+                const isActionBtn = event.target.closest('.action-btn');
+                
+                if (!isActionBtn) {
+                    const url = card.getAttribute('data-url');
+                    if (url) {
+                        window.location.href = url;
+                    }
+                }
+            });
+        }
+    });
+</script>
 
 </body>
 </html>

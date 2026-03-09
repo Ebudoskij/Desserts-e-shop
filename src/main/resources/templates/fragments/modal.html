@@ -1,0 +1,38 @@
+<div th:fragment="confirmModal" id="confirmModal" class="modal-overlay" style="display: none;">
+    <div class="modal-content text-center">
+        <h3 id="confirmModalTitle" style="margin-top: 0; color: var(--dark-brown);">Підтвердження дії</h3>
+        <p id="confirmModalText" style="margin-bottom: 2rem;">Ви впевнені?</p>
+        <div class="flex justify-center gap-2 mt-3">
+            <button type="button" class="btn btn-secondary" onclick="closeConfirmModal()">Скасувати</button>
+            <button type="button" class="btn btn-danger" id="confirmModalBtn">Підтвердити</button>
+        </div>
+    </div>
+</div>
+
+<script th:fragment="confirmModalScript">
+    let currentFormToSubmit = null;
+
+    function openConfirmModal(formElement, message) {
+        currentFormToSubmit = formElement;
+        
+        if (message) {
+            document.getElementById('confirmModalText').innerText = message;
+        } else {
+            document.getElementById('confirmModalText').innerText = "Ви впевнені, що хочете видалити цей елемент?";
+        }
+        
+        document.getElementById('confirmModal').style.display = 'flex';
+    }
+
+    function closeConfirmModal() {
+        document.getElementById('confirmModal').style.display = 'none';
+        currentFormToSubmit = null;
+    }
+
+    document.getElementById('confirmModalBtn').addEventListener('click', function() {
+        if (currentFormToSubmit) {
+            currentFormToSubmit.submit();
+        }
+        closeConfirmModal();
+    });
+</script>

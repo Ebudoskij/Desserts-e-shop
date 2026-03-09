@@ -1,13 +1,15 @@
 package com.ebudoskij.dessert_shop.controller;
 
-import com.ebudoskij.dessert_shop.model.Product;
 import com.ebudoskij.dessert_shop.model.dto.PageResponseDto;
+import com.ebudoskij.dessert_shop.model.dto.product.ProductCardDto;
 import com.ebudoskij.dessert_shop.model.dto.product.ProductCreateDto;
+import com.ebudoskij.dessert_shop.model.dto.product.ProductResponseDto;
 import com.ebudoskij.dessert_shop.model.dto.product.ProductUpdateDto;
 import com.ebudoskij.dessert_shop.model.enums.UnitType;
 import com.ebudoskij.dessert_shop.service.CategoryService;
 import com.ebudoskij.dessert_shop.service.ProductService;
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -15,24 +17,28 @@ import org.springframework.web.bind.annotation.*;
 
 @Controller
 @RequestMapping("/products")
+@RequiredArgsConstructor
 public class ProductController {
 
-    ProductService productService;
-    CategoryService categoryService;
+    private final ProductService productService;
+    private final CategoryService categoryService;
 
     @GetMapping
     public String fetchAll(@RequestParam(required = false, defaultValue = "0") int page,
                                            @RequestParam(required = false, defaultValue = "10") int size,
-                                           @RequestParam(required = false) String sortBy,
+                                           @RequestParam(required = false, defaultValue = "id") String sortBy,
                                            @RequestParam(required = false, defaultValue = "asc") String sortDir,
                                            @RequestParam(required = false) String searchQuery,
+                                           @RequestParam(required = false, defaultValue = "false") Boolean deleted,
                                            Model model){
-        PageResponseDto<Product> response = productService.getAll(
+        PageResponseDto<ProductCardDto> response = productService.getAll(
                 page,
                 size,
                 sortBy,
                 sortDir,
-                searchQuery);
+                searchQuery,
+                deleted
+        );
 
         model.addAttribute("pageResponse", response);
         model.addAttribute("sortBy", sortBy);
@@ -45,7 +51,7 @@ public class ProductController {
     @GetMapping("/{id}")
     public String fetchById(@PathVariable Long id,
                             Model model){
-        Product response = productService.getById(id);
+        ProductResponseDto response = productService.getById(id);
 
         model.addAttribute("response", response);
 

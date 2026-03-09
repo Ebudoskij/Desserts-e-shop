@@ -5,6 +5,7 @@ import com.ebudoskij.dessert_shop.model.dto.category.CategoryCreateDto;
 import com.ebudoskij.dessert_shop.model.enums.UnitType;
 import com.ebudoskij.dessert_shop.service.CategoryService;
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -14,8 +15,9 @@ import java.util.List;
 
 @Controller
 @RequestMapping("/categories")
+@RequiredArgsConstructor
 public class CategoryController {
-    CategoryService categoryService;
+    private final CategoryService categoryService;
 
     @GetMapping
     public String fetchAll(Model model){

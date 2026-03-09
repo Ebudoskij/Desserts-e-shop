@@ -16,6 +16,9 @@ import java.util.List;
 @Setter
 public class ProductResponseDto {
     @NotNull
+    private Long id;
+
+    @NotNull
     private Category category;
 
     @NotBlank
@@ -29,5 +32,7 @@ public class ProductResponseDto {
     @NotNull
     private UnitType unitType;
 
-    private List<MediaResponseDto> imageUrls;
+    private List<MediaResponseDto> images;
+
+    private Boolean isDeleted;
 }

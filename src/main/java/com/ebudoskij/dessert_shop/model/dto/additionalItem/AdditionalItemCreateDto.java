@@ -1,6 +1,7 @@
 package com.ebudoskij.dessert_shop.model.dto.additionalItem;
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import lombok.Getter;
 import lombok.Setter;
@@ -17,6 +18,7 @@ public class AdditionalItemCreateDto {
 
     private String description;
 
+    @NotNull
     @Positive
     private BigDecimal extraPrice;
 

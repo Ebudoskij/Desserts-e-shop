@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Редагувати Замовлення - Магазин Десертів</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+
+<div th:replace="~{fragments/navbar :: navbar}"></div>
+
+<div class="container">
+    <div class="page-header">
+        <h1>Редагувати Замовлення</h1>
+        <a th:href="@{/orders}" class="btn btn-secondary">Повернутися до Замовлень</a>
+    </div>
+
+    <div class="form-card">
+        <form th:action="@{/orders/{id}(id=${id})}" th:object="${order}" method="post">
+            <input type="hidden" name="_method" value="put" />
+            
+            <div class="form-group">
+                <label for="deliveryAddress">Адреса доставки</label>
+                <textarea id="deliveryAddress" th:field="*{deliveryAddress}" class="form-control" rows="3"></textarea>
+                <span th:if="${#fields.hasErrors('deliveryAddress')}" th:errors="*{deliveryAddress}" class="text-danger">Помилка</span>
+            </div>
+
+            <div class="form-group">
+                <label for="deliveryDate">Дата доставки</label>
+                <input type="datetime-local" id="deliveryDate" th:field="*{deliveryDate}" class="form-control" />
+                <span th:if="${#fields.hasErrors('deliveryDate')}" th:errors="*{deliveryDate}" class="text-danger">Помилка</span>
+            </div>
+
+            <div class="mt-3">
+                <button type="submit" class="btn btn-primary">Оновити Замовлення</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+</body>
+</html>
