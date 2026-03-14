@@ -5,3 +5,7 @@ databaseChangeLog:
       file: db/changelog/changes/002-add-soft-deletes.sql
   - include:
       file: db/changelog/changes/003-add-customizable-product.sql
+  - include:
+      file: db/changelog/changes/004-add-login-attempts.sql
+  - include:
+      file: db/changelog/changes/005-add-refresh-token.sql

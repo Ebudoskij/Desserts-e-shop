@@ -16,6 +16,4 @@ public class OrderStatus {
 
     @Column(name = "name", nullable = false, length = 50)
     private String name;
-
-
 }

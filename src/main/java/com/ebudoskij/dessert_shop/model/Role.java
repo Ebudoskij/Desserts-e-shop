@@ -1,5 +1,6 @@
 package com.ebudoskij.dessert_shop.model;
 
+import com.ebudoskij.dessert_shop.model.enums.RoleType;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -16,8 +17,9 @@ public class Role {
     @Column(name = "id", nullable = false)
     private Long id;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "name", nullable = false, length = 20)
-    private String name;
+    private RoleType name;
 
     @ManyToMany(mappedBy = "roles")
     private Set<User> users;

@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Вхід - Магазин Десертів</title>
+    <!-- Use standard styles as a baseline -->
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+    <!-- Append custom auth override styling -->
+    <link rel="stylesheet" th:href="@{/css/auth.css}">
+</head>
+<body class="auth-body">
+
+<!-- Minimal Navbar restricted to Home link -->
+<nav class="auth-navbar">
+    <a th:href="@{/}" class="auth-navbar-brand">Магазин Десертів</a>
+</nav>
+
+<div class="auth-container">
+    <div class="auth-card">
+        <div class="auth-header">
+            <h1>Вхід</h1>
+            <p>Увійдіть до свого облікового запису</p>
+        </div>
+
+        <div th:if="${param.error}" class="auth-alert-error">
+            Невірний email або пароль!
+        </div>
+
+        <div th:if="${logout}" class="auth-alert-success">
+            Ви вийшли з акаунту
+        </div>
+
+        <form th:action="@{/auth/login}" method="post" th:object="${user}">
+            
+            <div class="auth-form-group">
+                <label for="email">Email</label>
+                <input type="email" id="email" th:field="*{email}" class="auth-form-control" th:classappend="${#fields.hasErrors('email')} ? 'is-invalid' : ''" placeholder="Введіть ваш email" autofocus required/>
+                <span th:if="${#fields.hasErrors('email')}" th:errors="*{email}" class="validation-error">Помилка Email</span>
+            </div>
+
+            <div class="auth-form-group">
+                <label for="password">Пароль</label>
+                <input type="password" id="password" th:field="*{password}" class="auth-form-control" th:classappend="${#fields.hasErrors('password')} ? 'is-invalid' : ''" placeholder="Введіть ваш пароль" required/>
+                <span th:if="${#fields.hasErrors('password')}" th:errors="*{password}" class="validation-error">Помилка пароля</span>
+            </div>
+
+            <button type="submit" class="auth-btn-submit">Увійти</button>
+
+            <div class="auth-footer">
+                <a th:href="@{/auth/register}" class="auth-link">Якщо ще не маєте акаунту</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+</body>
+</html>
