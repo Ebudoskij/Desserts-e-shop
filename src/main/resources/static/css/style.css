@@ -79,6 +79,7 @@ h1, h2, h3 {
 
 /* Buttons */
 .btn {
+    all: unset;
     display: inline-block;
     padding: 0.5rem 1rem;
     border-radius: 4px;
@@ -409,4 +410,43 @@ select.form-control {
     width: 18px;
     height: 18px;
     fill: currentColor;
+}
+
+/* Filters Panel and Categories List */
+.categories-list::-webkit-scrollbar { display: none; }
+.categories-list { -ms-overflow-style: none; scrollbar-width: none; }
+.category-badge {
+    padding: 8px 16px; background-color: #f3f4f6; color: #374151;
+    border-radius: 20px; white-space: nowrap; text-decoration: none;
+    font-weight: 500; transition: all 0.2s; border: 1px solid #e5e7eb;
+}
+.category-badge:hover, .category-badge.active {
+    background-color: var(--primary-color, #8b5a2b); color: white; border-color: var(--primary-color, #8b5a2b);
+}
+.filters-panel {
+    background: var(--white); padding: 1.5rem; border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05); border: 1px solid #eaeaea;
+    margin-bottom: 8px;
+}
+.filters-form { display: flex; flex-wrap: wrap; gap: 1.5rem; align-items: flex-end; }
+.filter-group { display: flex; flex-direction: column; gap: 0.5rem; }
+.filter-group label { font-weight: 500; color: #4b5563; font-size: 0.9rem; margin-bottom: 0; }
+
+.range-slider { position: relative; width: 100%; height: 30px; margin-top: 5px; }
+.range-slider input[type="range"] {
+    position: absolute; width: 100%; height: 0; z-index: 2;
+    -webkit-appearance: none; appearance: none; pointer-events: none; outline: none; top: 10px;
+}
+.range-slider input[type="range"]::-webkit-slider-thumb {
+    pointer-events: all; width: 16px; height: 16px; -webkit-appearance: none; appearance: none;
+    border-radius: 50%; background: var(--primary-color, #8b5a2b);
+    cursor: pointer; border: 2px solid white; box-shadow: 0 0 3px rgba(0,0,0,0.3);
+}
+.slider-track {
+    position: absolute; z-index: 1; left: 0; right: 0; top: 17px;
+    height: 4px; border-radius: 2px; background-color: #e5e7eb;
+}
+.slider-range {
+    position: absolute; z-index: 1; left: 0; right: 0; top: 17px;
+    height: 4px; border-radius: 2px; background-color: var(--primary-color, #8b5a2b);
 }

@@ -16,4 +16,6 @@ public interface CategoryService {
     void updateById(Long id, @Valid CategoryCreateDto dto);
 
     void deleteById(Long id);
+
+    List<Long> getCategoryAndChildrenIds(Long categoryId);
 }

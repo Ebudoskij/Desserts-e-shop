@@ -22,20 +22,15 @@ public class ProductRepositoryImpl implements ProductRepositoryCustom {
     @PersistenceContext
     private EntityManager entityManager;
 
-    private CriteriaBuilder cb;
-
     @Override
     public Page<ProductCardDto> findProductCards(Specification<Product> spec, Pageable pageable) {
-        this.cb = entityManager.getCriteriaBuilder();
-
-        // 1. Data Query
+        CriteriaBuilder cb = entityManager.getCriteriaBuilder();
         CriteriaQuery<ProductCardDto> query = cb.createQuery(ProductCardDto.class);
         Root<Product> p = query.from(Product.class);
 
-        // 2. Correlated Subquery for Media URL
+        // 1. Subquery for media (remains the same)
         Subquery<String> mediaSubquery = query.subquery(String.class);
         Root<Media> m = mediaSubquery.from(Media.class);
-
         mediaSubquery.select(m.get("url"))
                 .where(cb.and(
                         cb.equal(m.get("entityId"), p.get("id")),
@@ -43,8 +38,16 @@ public class ProductRepositoryImpl implements ProductRepositoryCustom {
                         cb.equal(m.get("priority"), createMinPrioritySubquery(query, p.get("id")))
                 ));
 
-        // 3. SELECT NEW ProductCardDto(...)
-        // Make sure the order matches your ProductCardDto constructor exactly!
+        // 2. Robust Specification Application
+        if (spec != null) {
+            // Pass the actual Root (p) and Query (query) to the spec
+            Predicate predicate = spec.toPredicate(p, query, cb);
+            if (predicate != null) {
+                query.where(predicate);
+            }
+        }
+
+        // 3. Select DTO
         query.select(cb.construct(ProductCardDto.class,
                 p.get("id"),
                 p.get("category"),
@@ -54,41 +57,42 @@ public class ProductRepositoryImpl implements ProductRepositoryCustom {
                 mediaSubquery
         ));
 
-        // 4. Apply Dynamic Filters (Specification)
-        if (spec != null) {
-            query.where(spec.toPredicate(p, query, cb));
-        }
-
-        // 5. Apply Sorting
+        // 4. Sorting + Pagination (remains the same)
         if (pageable.getSort().isSorted()) {
             query.orderBy(QueryUtils.toOrders(pageable.getSort(), p, cb));
         }
 
-        // 6. Execute Query
         List<ProductCardDto> results = entityManager.createQuery(query)
                 .setFirstResult((int) pageable.getOffset())
                 .setMaxResults(pageable.getPageSize())
                 .getResultList();
 
-        // 7. Get Total Count for Pagination
         long total = getTotalCount(spec);
 
         return new PageImpl<>(results, pageable, total);
     }
 
     private long getTotalCount(Specification<Product> spec) {
+        CriteriaBuilder cb = entityManager.getCriteriaBuilder(); // Ensure cb is initialized
         CriteriaQuery<Long> countQuery = cb.createQuery(Long.class);
         Root<Product> root = countQuery.from(Product.class);
 
         countQuery.select(cb.count(root));
+
         if (spec != null) {
-            countQuery.where(spec.toPredicate(root, countQuery, cb));
+            // Build the predicate
+            Predicate predicate = spec.toPredicate(root, countQuery, cb);
+            // Hibernate 6+ requirement: Only apply if not null
+            if (predicate != null) {
+                countQuery.where(predicate);
+            }
         }
 
         return entityManager.createQuery(countQuery).getSingleResult();
     }
 
     private Subquery<Integer> createMinPrioritySubquery(CriteriaQuery<?> query, Expression<Long> productId) {
+        CriteriaBuilder cb = entityManager.getCriteriaBuilder();
         Subquery<Integer> minSub = query.subquery(Integer.class);
         Root<Media> m2 = minSub.from(Media.class);
 

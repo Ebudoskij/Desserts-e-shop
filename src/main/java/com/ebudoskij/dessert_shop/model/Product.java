@@ -22,7 +22,7 @@ public class Product {
     @JoinColumn(name = "category_id", nullable = false)
     private Category category;
 
-    @Column(name = "name", nullable = false, length = 200)
+    @Column(name = "name", nullable = false, length = 200, unique = true)
     private String name;
 
     @Column(name = "description", length = 500)

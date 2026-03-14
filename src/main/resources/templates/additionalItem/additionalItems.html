@@ -15,15 +15,66 @@
         <a th:href="@{/extras/add}" class="btn btn-primary">Додати Новий Додаток</a>
     </div>
 
-    <!-- Search Form -->
-    <div class="mb-3">
-        <form th:action="@{/extras}" method="get" class="flex gap-2">
-            <input type="text" name="searchQuery" th:value="${searchQuery}" placeholder="Пошук додатків..." class="form-control" style="max-width: 300px;"/>
-            <button type="submit" class="btn btn-secondary">Пошук</button>
-            <a th:href="@{/extras}" class="btn btn-primary" th:if="${searchQuery != null and !searchQuery.isEmpty()}">Очистити</a>
-            <input type="hidden" name="sortBy" th:value="${sortBy}"/>
-            <input type="hidden" name="sortDir" th:value="${sortDir}"/>
-            <input type="hidden" name="size" th:value="${pageResponse.pageSize}"/>
+    <!-- Filters Panel -->
+    <div class="filters-panel mb-4">
+        <form th:action="@{/extras}" method="get" class="filters-form">
+            <!-- Search -->
+            <div class="filter-group">
+                <label>Пошук</label>
+                <input type="text" name="searchQuery" th:value="${additionalItemFilterDto?.searchQuery}" placeholder="Пошук додатків..." class="form-control" style="width: 200px;"/>
+            </div>
+            
+            <!-- Price Range -->
+            <div class="filter-group price-filter">
+                <label>Ціна (₴)</label>
+                <div class="price-inputs" style="display: flex; gap: 0.5rem; align-items: center;">
+                    <input type="number" id="minPriceInput" name="minPrice" th:value="${additionalItemFilterDto?.minPrice != null ? additionalItemFilterDto.minPrice : (minPrice != null ? minPrice : 0)}" th:min="${minPrice != null ? minPrice : 0}" th:max="${maxPrice != null ? maxPrice : 1000}" step="0.01" class="form-control" style="width: 90px; text-align: center;"/>
+                    <span> - </span>
+                    <input type="number" id="maxPriceInput" name="maxPrice" th:value="${additionalItemFilterDto?.maxPrice != null ? additionalItemFilterDto.maxPrice : (maxPrice != null ? maxPrice : 1000)}" th:min="${minPrice != null ? minPrice : 0}" th:max="${maxPrice != null ? maxPrice : 1000}" step="0.01" class="form-control" style="width: 90px; text-align: center;"/>
+                </div>
+                <div class="range-slider">
+                    <input type="range" id="minPriceRange" th:min="${minPrice != null ? minPrice : 0}" th:max="${maxPrice != null ? maxPrice : 1000}" th:value="${additionalItemFilterDto?.minPrice != null ? additionalItemFilterDto.minPrice : (minPrice != null ? minPrice : 0)}" step="0.01">
+                    <input type="range" id="maxPriceRange" th:min="${minPrice != null ? minPrice : 0}" th:max="${maxPrice != null ? maxPrice : 1000}" th:value="${additionalItemFilterDto?.maxPrice != null ? additionalItemFilterDto.maxPrice : (maxPrice != null ? maxPrice : 1000)}" step="0.01">
+                    <div class="slider-track"></div>
+                    <div id="slider-range" class="slider-range"></div>
+                </div>
+            </div>
+
+            <!-- Status -->
+            <div class="filter-group">
+                <label>Статус</label>
+                <select name="deleted" class="form-control" style="width: 150px;">
+                    <option value="">Всі</option>
+                    <option value="false" th:selected="${additionalItemFilterDto?.deleted != null and !additionalItemFilterDto.deleted}">Активні</option>
+                    <option value="true" th:selected="${additionalItemFilterDto?.deleted != null and additionalItemFilterDto.deleted}">Видалені</option>
+                </select>
+            </div>
+
+            <!-- Sorting & Pagination Params -->
+            <div class="filter-group">
+                <label>Сортування</label>
+                <select name="sort" class="form-control" style="width: 200px;">
+                    <option value="id,asc" th:selected="${#strings.equals(param.sort, 'id,asc') or param.sort == null}">Звичайне</option>
+                    <option value="extraPrice,desc" th:selected="${#strings.equals(param.sort, 'extraPrice,desc')}">Від дорогих</option>
+                    <option value="extraPrice,asc" th:selected="${#strings.equals(param.sort, 'extraPrice,asc')}">Від дешевих</option>
+                    <option value="name,desc" th:selected="${#strings.equals(param.sort, 'name,desc')}">За назвою, за спаданням</option>
+                    <option value="name,asc" th:selected="${#strings.equals(param.sort, 'name,asc')}">За назвою, за зростанням</option>
+                </select>
+            </div>
+
+            <div class="filter-group">
+                <label>Показати</label>
+                <select name="size" class="form-control" style="width: 80px;">
+                    <option value="10" th:selected="${pageResponse.pageSize == 10}">10</option>
+                    <option value="20" th:selected="${pageResponse.pageSize == 20}">20</option>
+                    <option value="50" th:selected="${pageResponse.pageSize == 50}">50</option>
+                </select>
+            </div>
+
+            <div class="filter-actions" style="display: flex; align-items: flex-end; gap: 0.5rem; padding-bottom: 2px;">
+                <button type="submit" class="btn btn-secondary">Застосувати</button>
+                <a th:href="@{/extras}" class="btn btn-outline" style="background: #f3f4f6; color: #374151; border: 1px solid #d1d5db; text-decoration: none; padding: 0.5rem 1rem; border-radius: 4px;">Скинути все</a>
+            </div>
         </form>
     </div>
 
@@ -62,16 +113,16 @@
     <!-- Pagination -->
     <div th:if="${pageResponse.totalPages > 1}">
         <ul class="pagination">
-            <li class="page-item" th:classappend="${pageResponse.last ? 'disabled' : ''}">
-                <a class="page-link" th:href="@{/extras(page=${pageResponse.pageNo - 1}, size=${pageResponse.pageSize}, sortBy=${sortBy}, sortDir=${sortDir}, searchQuery=${searchQuery})}" th:if="${!pageResponse.last}">Попередня</a>
+            <li class="page-item" th:classappend="${pageResponse.pageNo == 0 ? 'disabled' : ''}">
+                <a class="page-link" th:href="@{/extras(page=${pageResponse.pageNo - 1}, size=${pageResponse.pageSize}, sort=${param.sort}, searchQuery=${additionalItemFilterDto?.searchQuery}, minPrice=${additionalItemFilterDto?.minPrice}, maxPrice=${additionalItemFilterDto?.maxPrice}, deleted=${additionalItemFilterDto?.deleted})}" th:if="${pageResponse.pageNo > 0}">Попередня</a>
             </li>
             
             <li class="page-item" th:each="i : ${#numbers.sequence(0, pageResponse.totalPages - 1)}" th:classappend="${pageResponse.pageNo == i ? 'active' : ''}">
-                <a class="page-link" th:href="@{/extras(page=${i}, size=${pageResponse.pageSize}, sortBy=${sortBy}, sortDir=${sortDir}, searchQuery=${searchQuery})}" th:text="${i + 1}">1</a>
+                <a class="page-link" th:href="@{/extras(page=${i}, size=${pageResponse.pageSize}, sort=${param.sort}, searchQuery=${additionalItemFilterDto?.searchQuery}, minPrice=${additionalItemFilterDto?.minPrice}, maxPrice=${additionalItemFilterDto?.maxPrice}, deleted=${additionalItemFilterDto?.deleted})}" th:text="${i + 1}">1</a>
             </li>
 
             <li class="page-item" th:classappend="${pageResponse.last ? 'disabled' : ''}">
-                <a class="page-link" th:href="@{/extras(page=${pageResponse.pageNo + 1}, size=${pageResponse.pageSize}, sortBy=${sortBy}, sortDir=${sortDir}, searchQuery=${searchQuery})}" th:if="${!pageResponse.last}">Наступна</a>
+                <a class="page-link" th:href="@{/extras(page=${pageResponse.pageNo + 1}, size=${pageResponse.pageSize}, sort=${param.sort}, searchQuery=${additionalItemFilterDto?.searchQuery}, minPrice=${additionalItemFilterDto?.minPrice}, maxPrice=${additionalItemFilterDto?.maxPrice}, deleted=${additionalItemFilterDto?.deleted})}" th:if="${!pageResponse.last}">Наступна</a>
             </li>
         </ul>
     </div>
@@ -98,6 +149,76 @@
                     }
                 }
             });
+        }
+
+        // Dual Slider Logic
+        const minRange = document.getElementById('minPriceRange');
+        const maxRange = document.getElementById('maxPriceRange');
+        const minInput = document.getElementById('minPriceInput');
+        const maxInput = document.getElementById('maxPriceInput');
+        const sliderRange = document.getElementById('slider-range');
+
+        if (minRange && maxRange && minInput && maxInput && sliderRange) {
+            const updateSlider = () => {
+                let minVal = parseFloat(minRange.value);
+                let maxVal = parseFloat(maxRange.value);
+
+                if (minVal > maxVal) {
+                    let tmp = minVal; minVal = maxVal; maxVal = tmp;
+                }
+
+                const minLimit = parseFloat(minRange.min);
+                const maxLimit = parseFloat(minRange.max);
+                const rangeDiff = maxLimit - minLimit;
+
+                const leftPercent = rangeDiff === 0 ? 0 : ((minVal - minLimit) / rangeDiff) * 100;
+                const rightPercent = rangeDiff === 0 ? 0 : 100 - ((maxVal - minLimit) / rangeDiff) * 100;
+
+                sliderRange.style.left = leftPercent + '%';
+                sliderRange.style.right = rightPercent + '%';
+            };
+
+            minRange.addEventListener('input', function() {
+                let minVal = parseFloat(minRange.value);
+                let maxVal = parseFloat(maxRange.value);
+                if (minVal > maxVal) { minRange.value = maxVal; minVal = maxVal; }
+                minInput.value = minVal;
+                updateSlider();
+            });
+
+            maxRange.addEventListener('input', function() {
+                let minVal = parseFloat(minRange.value);
+                let maxVal = parseFloat(maxRange.value);
+                if (maxVal < minVal) { maxRange.value = minVal; maxVal = minVal; }
+                maxInput.value = maxVal;
+                updateSlider();
+            });
+
+            minInput.addEventListener('change', function() {
+                let val = parseFloat(minInput.value);
+                let maxLim = parseFloat(maxRange.max);
+                let minLim = parseFloat(minRange.min);
+                if (isNaN(val)) val = minLim;
+                if (val < minLim) val = minLim;
+                if (val > maxLim) val = maxLim;
+                minInput.value = val;
+                minRange.value = val;
+                updateSlider();
+            });
+
+            maxInput.addEventListener('change', function() {
+                let val = parseFloat(maxInput.value);
+                let maxLim = parseFloat(maxRange.max);
+                let minLim = parseFloat(minRange.min);
+                if (isNaN(val)) val = maxLim;
+                if (val > maxLim) val = maxLim;
+                if (val < minLim) val = minLim;
+                maxInput.value = val;
+                maxRange.value = val;
+                updateSlider();
+            });
+
+            updateSlider();
         }
     });
 </script>

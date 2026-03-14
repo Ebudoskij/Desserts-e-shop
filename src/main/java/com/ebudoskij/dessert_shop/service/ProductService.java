@@ -1,21 +1,14 @@
 package com.ebudoskij.dessert_shop.service;
 
 import com.ebudoskij.dessert_shop.model.dto.PageResponseDto;
-import com.ebudoskij.dessert_shop.model.dto.product.ProductCardDto;
-import com.ebudoskij.dessert_shop.model.dto.product.ProductCreateDto;
-import com.ebudoskij.dessert_shop.model.dto.product.ProductResponseDto;
-import com.ebudoskij.dessert_shop.model.dto.product.ProductUpdateDto;
+import com.ebudoskij.dessert_shop.model.dto.product.*;
 import jakarta.validation.Valid;
+import org.springframework.data.domain.Pageable;
+
+import java.math.BigDecimal;
 
 public interface ProductService {
-    PageResponseDto<ProductCardDto> getAll(
-            int page,
-            int size,
-            String sortBy,
-            String sortDir,
-            String searchQuery,
-            Boolean deleted
-    );
+    PageResponseDto<ProductCardDto> getAll(ProductFilteringDto filter, Pageable pageable);
 
     ProductResponseDto getById(Long id);
 
@@ -26,4 +19,8 @@ public interface ProductService {
     void createProduct(@Valid ProductCreateDto dto);
 
     ProductResponseDto getToUpdate(Long id);
+
+    BigDecimal getMaxPrice();
+
+    BigDecimal getMinPrice();
 }

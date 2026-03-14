@@ -19,7 +19,7 @@ public class Category {
     @JoinColumn(name = "parent_id")
     private Category parent;
 
-    @Column(name = "name", nullable = false, length = 100)
+    @Column(name = "name", nullable = false, length = 100, unique = true)
     private String name;
 
     @Column(name = "description", length = 500)

@@ -1,15 +1,15 @@
 package com.ebudoskij.dessert_shop.controller;
 
 import com.ebudoskij.dessert_shop.model.dto.PageResponseDto;
-import com.ebudoskij.dessert_shop.model.dto.product.ProductCardDto;
-import com.ebudoskij.dessert_shop.model.dto.product.ProductCreateDto;
-import com.ebudoskij.dessert_shop.model.dto.product.ProductResponseDto;
-import com.ebudoskij.dessert_shop.model.dto.product.ProductUpdateDto;
+import com.ebudoskij.dessert_shop.model.dto.product.*;
 import com.ebudoskij.dessert_shop.model.enums.UnitType;
 import com.ebudoskij.dessert_shop.service.CategoryService;
 import com.ebudoskij.dessert_shop.service.ProductService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -24,26 +24,16 @@ public class ProductController {
     private final CategoryService categoryService;
 
     @GetMapping
-    public String fetchAll(@RequestParam(required = false, defaultValue = "0") int page,
-                                           @RequestParam(required = false, defaultValue = "10") int size,
-                                           @RequestParam(required = false, defaultValue = "id") String sortBy,
-                                           @RequestParam(required = false, defaultValue = "asc") String sortDir,
-                                           @RequestParam(required = false) String searchQuery,
-                                           @RequestParam(required = false, defaultValue = "false") Boolean deleted,
-                                           Model model){
-        PageResponseDto<ProductCardDto> response = productService.getAll(
-                page,
-                size,
-                sortBy,
-                sortDir,
-                searchQuery,
-                deleted
-        );
+    public String fetchAll(@ModelAttribute ProductFilteringDto filter,
+                           @PageableDefault(size = 10, page = 0, sort = "id", direction = Sort.Direction.ASC)
+                           Pageable pageable,
+                           Model model){
+        PageResponseDto<ProductCardDto> response = productService.getAll(filter, pageable);
 
         model.addAttribute("pageResponse", response);
-        model.addAttribute("sortBy", sortBy);
-        model.addAttribute("sortDir", sortDir);
-        model.addAttribute("searchQuery", searchQuery);
+        model.addAttribute("categories", categoryService.getAll());
+        model.addAttribute("minPrice", productService.getMinPrice());
+        model.addAttribute("maxPrice", productService.getMaxPrice());
 
         return "product/products";
     }

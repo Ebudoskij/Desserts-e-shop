@@ -4,20 +4,18 @@ import com.ebudoskij.dessert_shop.exception.EntityNotFoundException;
 import com.ebudoskij.dessert_shop.mapper.AdditionalItemMapper;
 import com.ebudoskij.dessert_shop.model.AdditionalItem;
 import com.ebudoskij.dessert_shop.model.dto.PageResponseDto;
-import com.ebudoskij.dessert_shop.model.dto.additionalItem.AdditionalItemCardDto;
-import com.ebudoskij.dessert_shop.model.dto.additionalItem.AdditionalItemCreateDto;
-import com.ebudoskij.dessert_shop.model.dto.additionalItem.AdditionalItemResponseDto;
-import com.ebudoskij.dessert_shop.model.dto.additionalItem.AdditionalItemUpdateDto;
+import com.ebudoskij.dessert_shop.model.dto.additionalItem.*;
 import com.ebudoskij.dessert_shop.repository.AdditionalItemRepository;
 import com.ebudoskij.dessert_shop.service.AdditionalItemService;
 import com.ebudoskij.dessert_shop.service.MediaService;
 import com.ebudoskij.dessert_shop.utils.specifications.AdditionalItemSpecificationUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Sort;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
+
+import java.math.BigDecimal;
 
 @Service
 @RequiredArgsConstructor
@@ -28,29 +26,13 @@ public class AdditionalItemServiceImpl implements AdditionalItemService {
     private final MediaService mediaService;
 
     @Override
-    public PageResponseDto<AdditionalItemCardDto> getAll(int page, 
-                                                         int size, 
-                                                         String sortBy, 
-                                                         String sortDir, 
-                                                         String searchQuery,
-                                                         Boolean deleted) {
-        Sort sort = sortDir.equalsIgnoreCase(Sort.Direction.ASC.name()) ? Sort.by(sortBy).ascending()
-                : Sort.by(sortBy).descending();
-        PageRequest pageRequest = PageRequest.of(page, size, sort);
+    public PageResponseDto<AdditionalItemCardDto> getAll(AdditionalItemFilterDto filter, Pageable pageable) {
 
-        Specification<AdditionalItem> spec = AdditionalItemSpecificationUtil.buildFilters(searchQuery, deleted);
+        Specification<AdditionalItem> spec = AdditionalItemSpecificationUtil.buildFilters(filter);
 
-        Page<AdditionalItemCardDto> additionalItemPage = additionalItemRepository.findAdditionalItemCards(spec, pageRequest);
+        Page<AdditionalItemCardDto> additionalItemPage = additionalItemRepository.findAdditionalItemCards(spec, pageable);
 
-        PageResponseDto<AdditionalItemCardDto> response = new PageResponseDto<>();
-        response.setContent(additionalItemPage.getContent());
-        response.setPageNo(additionalItemPage.getNumber());
-        response.setPageSize(additionalItemPage.getSize());
-        response.setTotalElements(additionalItemPage.getTotalElements());
-        response.setTotalPages(additionalItemPage.getTotalPages());
-        response.setLast(additionalItemPage.isLast());
-
-        return response;
+        return new PageResponseDto<>(additionalItemPage);
     }
 
     @Override
@@ -123,5 +105,15 @@ public class AdditionalItemServiceImpl implements AdditionalItemService {
 
         item.setIsDeleted(true);
         additionalItemRepository.save(item);
+    }
+
+    @Override
+    public BigDecimal getMinPrice() {
+        return additionalItemRepository.findMinPrice();
+    }
+
+    @Override
+    public BigDecimal getMaxPrice() {
+        return additionalItemRepository.findMaxPrice();
     }
 }
