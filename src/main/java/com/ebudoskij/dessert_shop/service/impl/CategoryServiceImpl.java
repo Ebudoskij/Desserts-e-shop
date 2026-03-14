@@ -9,6 +9,7 @@ import com.ebudoskij.dessert_shop.service.CategoryService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -63,5 +64,22 @@ public class CategoryServiceImpl implements CategoryService {
         Category category = getById(id);
         category.setIsDeleted(true);
         categoryRepository.save(category);
+    }
+
+    @Override
+    public List<Long> getCategoryAndChildrenIds(Long categoryId) {
+        List<Long> result = new ArrayList<>();
+        collect(categoryId, result);
+        return result;
+    }
+
+    private void collect(Long categoryId, List<Long> result) {
+        result.add(categoryId);
+
+        List<Category> children = categoryRepository.findByParentId(categoryId);
+
+        for (Category child : children) {
+            collect(child.getId(), result);
+        }
     }
 }

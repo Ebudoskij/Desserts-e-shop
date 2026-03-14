@@ -5,10 +5,7 @@ import com.ebudoskij.dessert_shop.mapper.ProductMapper;
 import com.ebudoskij.dessert_shop.model.Category;
 import com.ebudoskij.dessert_shop.model.Product;
 import com.ebudoskij.dessert_shop.model.dto.PageResponseDto;
-import com.ebudoskij.dessert_shop.model.dto.product.ProductCreateDto;
-import com.ebudoskij.dessert_shop.model.dto.product.ProductCardDto;
-import com.ebudoskij.dessert_shop.model.dto.product.ProductResponseDto;
-import com.ebudoskij.dessert_shop.model.dto.product.ProductUpdateDto;
+import com.ebudoskij.dessert_shop.model.dto.product.*;
 import com.ebudoskij.dessert_shop.model.dto.media.MediaResponseDto;
 import com.ebudoskij.dessert_shop.repository.ProductRepository;
 import com.ebudoskij.dessert_shop.service.CategoryService;
@@ -17,45 +14,29 @@ import com.ebudoskij.dessert_shop.service.ProductService;
 import com.ebudoskij.dessert_shop.utils.specifications.ProductSpecificationsUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Sort;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 @Service
 @RequiredArgsConstructor
 public class ProductServiceImpl implements ProductService {
-
     private final ProductRepository productRepository;
     private final ProductMapper productMapper;
     private final CategoryService categoryService;
     private final MediaService mediaService;
+    private final ProductSpecificationsUtil productSpecificationsUtil;
+
     @Override
-    public PageResponseDto<ProductCardDto> getAll(int page,
-                                                  int size,
-                                                  String sortBy,
-                                                  String sortDir,
-                                                  String searchQuery,
-                                                  Boolean deleted) {
-        Sort sort = sortDir.equalsIgnoreCase(Sort.Direction.ASC.name()) ? Sort.by(sortBy).ascending()
-                : Sort.by(sortBy).descending();
-        PageRequest pageRequest = PageRequest.of(page, size, sort);
+    public PageResponseDto<ProductCardDto> getAll(ProductFilteringDto filter, Pageable pageable) {
+        Specification<Product> spec = productSpecificationsUtil.buildFilters(filter);
 
-        Specification<Product> spec = ProductSpecificationsUtil.buildFilters(searchQuery, deleted);
+        Page<ProductCardDto> productPage = productRepository.findProductCards(spec, pageable);
 
-        Page<ProductCardDto> productPage = productRepository.findProductCards(spec, pageRequest);
-
-        PageResponseDto<ProductCardDto> response = new PageResponseDto<>();
-        response.setContent(productPage.getContent());
-        response.setPageNo(productPage.getNumber());
-        response.setPageSize(productPage.getSize());
-        response.setTotalElements(productPage.getTotalElements());
-        response.setTotalPages(productPage.getTotalPages());
-        response.setLast(productPage.isLast());
-
-        return response;
+        return new PageResponseDto<>(productPage);
     }
 
     @Override
@@ -142,5 +123,15 @@ public class ProductServiceImpl implements ProductService {
         responseDto.setImages(mediaDtos);
 
         return responseDto;
+    }
+
+    @Override
+    public BigDecimal getMaxPrice() {
+        return productRepository.findMaxPrice();
+    }
+
+    @Override
+    public BigDecimal getMinPrice() {
+        return productRepository.findMinPrice();
     }
 }

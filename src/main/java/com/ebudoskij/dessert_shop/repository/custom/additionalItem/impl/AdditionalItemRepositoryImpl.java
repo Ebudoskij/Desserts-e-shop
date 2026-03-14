@@ -22,11 +22,10 @@ public class AdditionalItemRepositoryImpl implements AdditionalItemRepositoryCus
     @PersistenceContext
     private EntityManager entityManager;
 
-    private CriteriaBuilder cb; // Declared at class level for helper access
-
     @Override
     public Page<AdditionalItemCardDto> findAdditionalItemCards(Specification<AdditionalItem> spec, Pageable pageable) {
-        this.cb = entityManager.getCriteriaBuilder();
+        // Initialize locally to ensure thread-safety
+        CriteriaBuilder cb = entityManager.getCriteriaBuilder();
 
         // 1. Main Query
         CriteriaQuery<AdditionalItemCardDto> query = cb.createQuery(AdditionalItemCardDto.class);
@@ -40,16 +39,19 @@ public class AdditionalItemRepositoryImpl implements AdditionalItemRepositoryCus
                 .where(cb.and(
                         cb.equal(m.get("entityId"), a.get("id")),
                         cb.equal(m.get("entityType"), "AdditionalItem"),
-                        cb.equal(m.get("priority"), createMinPrioritySubquery(query, a.get("id")))
+                        cb.equal(m.get("priority"), createMinPrioritySubquery(cb, query, a.get("id")))
                 ));
 
         // 3. Construct DTO
         query.select(cb.construct(AdditionalItemCardDto.class,
                 a.get("id"), a.get("name"), a.get("extraPrice"), mediaSubquery));
 
-        // 4. Apply Specification Predicates
+        // 4. Apply Specification Predicates (The Fix)
         if (spec != null) {
-            query.where(spec.toPredicate(a, query, cb));
+            Predicate predicate = spec.toPredicate(a, query, cb);
+            if (predicate != null) {
+                query.where(predicate);
+            }
         }
 
         // 5. Apply Sorting
@@ -66,21 +68,26 @@ public class AdditionalItemRepositoryImpl implements AdditionalItemRepositoryCus
         return new PageImpl<>(results, pageable, getTotalCount(spec));
     }
 
-    // Helper: Gets the total count for the Page object
     private long getTotalCount(Specification<AdditionalItem> spec) {
+        CriteriaBuilder cb = entityManager.getCriteriaBuilder();
         CriteriaQuery<Long> countQuery = cb.createQuery(Long.class);
         Root<AdditionalItem> root = countQuery.from(AdditionalItem.class);
 
         countQuery.select(cb.count(root));
+
+        // Ensure null predicates aren't passed to .where()
         if (spec != null) {
-            countQuery.where(spec.toPredicate(root, countQuery, cb));
+            Predicate predicate = spec.toPredicate(root, countQuery, cb);
+            if (predicate != null) {
+                countQuery.where(predicate);
+            }
         }
 
         return entityManager.createQuery(countQuery).getSingleResult();
     }
 
-    // Helper: The subquery for MIN(priority)
-    private Subquery<Integer> createMinPrioritySubquery(CriteriaQuery<?> query, Expression<Long> id) {
+    // Pass CriteriaBuilder as a parameter to maintain thread-safety
+    private Subquery<Integer> createMinPrioritySubquery(CriteriaBuilder cb, CriteriaQuery<?> query, Expression<Long> id) {
         Subquery<Integer> minSub = query.subquery(Integer.class);
         Root<Media> m2 = minSub.from(Media.class);
 
