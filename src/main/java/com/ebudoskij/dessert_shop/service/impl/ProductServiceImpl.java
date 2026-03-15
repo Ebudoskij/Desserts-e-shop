@@ -17,6 +17,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.Comparator;
@@ -53,27 +54,51 @@ public class ProductServiceImpl implements ProductService {
                 .toList();
         responseDto.setImages(mediaDtos);
 
+        if (!mediaDtos.isEmpty()){
+            responseDto.setMainImageId(mediaDtos.getFirst().getId());
+        }
+
         return responseDto;
     }
 
     @Override
+    @Transactional
     public void updateById(Long id, ProductUpdateDto dto) {
         Product existingProduct = productRepository.findById(id)
-                        .filter(p -> !p.getIsDeleted())
-                        .orElseThrow(() -> new EntityNotFoundException("Product not found with id: " + id));
+                .filter(p -> !p.getIsDeleted())
+                .orElseThrow(() -> new EntityNotFoundException("Product not found with id: " + id));
 
         productMapper.updateEntityFromDto(dto, existingProduct);
 
+        // 1. Handle Category
         if (dto.getCategoryId() != null) {
-            Category category = categoryService.getById(dto.getCategoryId());
-            existingProduct.setCategory(category);
-        } else {
-            existingProduct.setCategory(null);
+            existingProduct.setCategory(categoryService.getById(dto.getCategoryId()));
         }
 
-        Product savedProduct = productRepository.save(existingProduct);
-        mediaService.deleteEntityImages(dto.getDeletedImageIds());
-        mediaService.saveEntityImages("Product", savedProduct.getId(), dto.getImages());
+        // 2. Delete images first
+        if (dto.getDeletedImageIds() != null && !dto.getDeletedImageIds().isEmpty()) {
+            mediaService.deleteEntityImages(dto.getDeletedImageIds());
+        }
+
+        // 3. Handle Main Image Logic (Mutual Exclusion)
+        // Priority: New uploads usually take precedence if both are sent,
+        // but typically the UI should only allow one selection.
+        if (dto.getNewMainImageIndex() != null && dto.getImages() != null) {
+            // If a NEW image is main, we don't care about mainImageId.
+            // saveEntityImages already calls demoteCurrentMain inside.
+            mediaService.saveEntityImages("Product", id, dto.getImages(), dto.getNewMainImageIndex());
+        } else {
+            // If no NEW image is main, check if we need to swap to an existing one
+            if (dto.getMainImageId() != null) {
+                mediaService.setMainImageById("Product", id, dto.getMainImageId());
+            }
+            // Save remaining new images normally (index null means no new main)
+            if (dto.getImages() != null && !dto.getImages().isEmpty()) {
+                mediaService.saveEntityImages("Product", id, dto.getImages(), null);
+            }
+        }
+
+        productRepository.save(existingProduct);
     }
 
     @Override
@@ -86,38 +111,33 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
+    @Transactional
     public void createProduct(ProductCreateDto dto) {
+        // 1. Map DTO to Entity
         Product product = productMapper.toEntity(dto);
+
+        // Explicitly set default state (though your DB or Entity might do this too)
         product.setIsDeleted(false);
 
+        // 2. Handle Category association
         if (dto.getCategoryId() != null) {
             Category category = categoryService.getById(dto.getCategoryId());
             product.setCategory(category);
         }
 
+        // 3. Save the product first to generate the ID needed for Media
         Product savedProduct = productRepository.save(product);
-        mediaService.saveEntityImages("Product", savedProduct.getId(), dto.getImages());
-    }
 
-    @Override
-    public ProductResponseDto getToUpdate(Long id) {
-        Product product = productRepository.findById(id)
-                .filter(p -> !p.getIsDeleted())
-                .orElseThrow(() -> new EntityNotFoundException("Product not found with id: " + id));
-
-        ProductResponseDto responseDto = productMapper.toDto(product);
-        
-        List<MediaResponseDto> mediaDtos = mediaService.getEntityImages("Product", id).stream()
-                .map(m -> {
-                    MediaResponseDto mediaDto = new MediaResponseDto();
-                    mediaDto.setId(m.getId());
-                    mediaDto.setUrl(m.getUrl());
-                    return mediaDto;
-                })
-                .toList();
-        responseDto.setImages(mediaDtos);
-
-        return responseDto;
+        // 4. Save images using the updated MediaService
+        // We pass the newMainImageIndex so the service can assign priority 0
+        if (dto.getImages() != null && !dto.getImages().isEmpty()) {
+            mediaService.saveEntityImages(
+                    "Product",
+                    savedProduct.getId(),
+                    dto.getImages(),
+                    dto.getMainImageIndex() // Ensure this field exists in ProductCreateDto
+            );
+        }
     }
 
     @Override

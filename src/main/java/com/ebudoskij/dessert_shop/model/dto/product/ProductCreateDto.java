@@ -29,4 +29,6 @@ public class ProductCreateDto {
     private UnitType unitType;
 
     private List<MultipartFile> images;
+
+    private Integer mainImageIndex;
 }

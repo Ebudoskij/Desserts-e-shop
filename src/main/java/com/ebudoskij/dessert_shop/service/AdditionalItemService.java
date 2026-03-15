@@ -14,8 +14,6 @@ public interface AdditionalItemService {
 
     void createAdditionalItem(@Valid AdditionalItemCreateDto dto);
 
-    AdditionalItemResponseDto getToUpdate(Long id);
-
     void updateById(Long id, @Valid AdditionalItemUpdateDto dto);
 
     void deleteById(Long id);

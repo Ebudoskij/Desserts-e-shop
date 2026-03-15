@@ -18,8 +18,6 @@ public interface ProductService {
 
     void createProduct(@Valid ProductCreateDto dto);
 
-    ProductResponseDto getToUpdate(Long id);
-
     BigDecimal getMaxPrice();
 
     BigDecimal getMinPrice();

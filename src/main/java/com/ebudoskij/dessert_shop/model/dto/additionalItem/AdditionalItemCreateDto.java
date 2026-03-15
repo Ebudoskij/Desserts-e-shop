@@ -23,4 +23,6 @@ public class AdditionalItemCreateDto {
     private BigDecimal extraPrice;
 
     private List<MultipartFile> images;
+
+    private Integer mainImageIndex;
 }
