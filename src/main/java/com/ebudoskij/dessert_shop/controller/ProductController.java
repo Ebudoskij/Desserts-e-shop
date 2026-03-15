@@ -103,4 +103,10 @@ public class ProductController {
         productService.deleteById(id);
         return "redirect:/products";
     }
+
+    @PostMapping("/{id}/restore")
+    public String restoreById(@PathVariable Long id){
+        productService.restoreById(id);
+        return "redirect:/products";
+    }
 }

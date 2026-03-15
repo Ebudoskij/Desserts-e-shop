@@ -44,7 +44,7 @@ public class AdditionalItemRepositoryImpl implements AdditionalItemRepositoryCus
 
         // 3. Construct DTO
         query.select(cb.construct(AdditionalItemCardDto.class,
-                a.get("id"), a.get("name"), a.get("extraPrice"), mediaSubquery));
+                a.get("id"), a.get("name"), a.get("extraPrice"), a.get("isDeleted"), mediaSubquery));
 
         // 4. Apply Specification Predicates (The Fix)
         if (spec != null) {

@@ -19,6 +19,7 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.util.Comparator;
 import java.util.List;
 
 @Service
@@ -48,12 +49,7 @@ public class ProductServiceImpl implements ProductService {
         ProductResponseDto responseDto = productMapper.toDto(product);
 
         List<MediaResponseDto> mediaDtos = mediaService.getEntityImages("Product", id).stream()
-                .map(m -> {
-                    MediaResponseDto mediaDto = new MediaResponseDto();
-                    mediaDto.setId(m.getId());
-                    mediaDto.setUrl(m.getUrl());
-                    return mediaDto;
-                })
+                .sorted(Comparator.comparing(MediaResponseDto::getPriority))
                 .toList();
         responseDto.setImages(mediaDtos);
 
@@ -83,7 +79,6 @@ public class ProductServiceImpl implements ProductService {
     @Override
     public void deleteById(Long id) {
         Product product = productRepository.findById(id)
-                .filter(p -> !p.getIsDeleted())
                 .orElseThrow(() -> new EntityNotFoundException("Product not found with id: " + id));
 
         product.setIsDeleted(true);
@@ -133,5 +128,14 @@ public class ProductServiceImpl implements ProductService {
     @Override
     public BigDecimal getMinPrice() {
         return productRepository.findMinPrice();
+    }
+
+    @Override
+    public void restoreById(Long id) {
+        Product product = productRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Product not found with id: " + id));
+
+        product.setIsDeleted(false);
+        productRepository.save(product);
     }
 }

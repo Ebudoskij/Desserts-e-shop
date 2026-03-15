@@ -24,5 +24,7 @@ public class AdditionalItemCardDto {
     @Positive
     private BigDecimal extraPrice;
 
+    private Boolean isDeleted;
+
     private String mainImageUrl;
 }

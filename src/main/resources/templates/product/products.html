@@ -72,7 +72,7 @@
             <div class="filter-group">
                 <label>Показати</label>
                 <select name="size" class="form-control" style="width: 80px;">
-                    <option value="10" th:selected="${pageResponse.pageSize == 5}">5</option>
+                    <option value="5" th:selected="${pageResponse.pageSize == 5}">5</option>
                     <option value="10" th:selected="${pageResponse.pageSize == 10}">10</option>
                     <option value="20" th:selected="${pageResponse.pageSize == 20}">20</option>
                     <option value="50" th:selected="${pageResponse.pageSize == 50}">50</option>
@@ -96,7 +96,7 @@
     </div>
 
     <div class="product-grid" th:if="${not #lists.isEmpty(pageResponse.content)}" id="productGrid">
-        <div class="product-card" th:each="product : ${pageResponse.content}" th:data-url="@{/products/{id}(id=${product.id})}">
+        <div class="product-card" th:each="product : ${pageResponse.content}" th:data-url="@{/products/{id}(id=${product.id})}" th:classappend="${product.isDeleted ? 'product-card-deleted' : ''}">
             <div class="product-card-img-container">
                 <img th:if="${product.mainImageUrl != null and !product.mainImageUrl.isEmpty()}" th:src="${product.mainImageUrl}" alt="Зображення продукту" style="width: 100%; height: 100%; object-fit: cover;">
                 <span th:unless="${product.mainImageUrl != null and !product.mainImageUrl.isEmpty()}" style="color: #ccc;">Немає фото</span>
@@ -114,13 +114,17 @@
                 </div>
                 
                 <div class="product-card-actions">
-                    <button type="button" class="btn btn-sm btn-primary btn-icon-text action-btn" onclick="alert('Додано до кошика!');" title="Замовити">
+                    <button type="button" class="btn btn-sm btn-primary btn-icon-text action-btn" onclick="alert('Додано до кошика!');" title="Замовити" th:if="${!product.isDeleted}">
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" style="pointer-events: none;"><path d="M7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-2zM1 2v2h2l3.6 7.59-1.35 2.45c-.16.28-.25.61-.25.96 0 1.1.9 2 2 2h12v-2H7.42c-.14 0-.25-.11-.25-.25l.03-.12.9-1.63h7.45c.75 0 1.41-.41 1.75-1.03l3.58-6.49c.08-.14.12-.31.12-.48 0-.55-.45-1-1-1H5.21l-.94-2H1zm16 16c-1.1 0-1.99.9-1.99 2s.89 2 1.99 2 2-.9 2-2-.9-2-2-2z"/></svg>
                         Замовити
                     </button>
-                    <a th:href="@{/products/{id}/update(id=${product.id})}" class="btn btn-sm btn-secondary action-btn">Редагувати</a>
-                    <form th:action="@{/products/{id}(id=${product.id})}" th:method="delete" style="display: flex; margin: 0;">
+                    <a th:href="@{/products/{id}/update(id=${product.id})}" class="btn btn-sm btn-secondary action-btn" th:if="${!product.isDeleted}">Редагувати</a>
+                    <form th:action="@{/products/{id}(id=${product.id})}" th:method="delete" style="display: flex; margin: 0;" th:if="${!product.isDeleted}">
                         <button type="button" class="btn btn-sm btn-danger action-btn" onclick="openConfirmModal(this.closest('form'), 'Ви впевнені, що хочете видалити цей продукт?');">Видалити</button>
+                    </form>
+                    
+                    <form th:if="${product.isDeleted}" th:action="@{/products/{id}/restore(id=${product.id})}" th:method="post" style="display: flex; margin: 0; width: 100%;">
+                        <button type="button" class="btn btn-sm action-btn" style="background-color: var(--success, #28a745); color: white; width: 100%;" onclick="openConfirmModal(this.closest('form'), 'Ви впевнені, що хочете відновити цей продукт?');">Відновити</button>
                     </form>
                 </div>
             </div>

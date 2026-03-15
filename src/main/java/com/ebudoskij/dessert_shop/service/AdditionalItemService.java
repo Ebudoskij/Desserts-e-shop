@@ -23,4 +23,6 @@ public interface AdditionalItemService {
     BigDecimal getMinPrice();
 
     BigDecimal getMaxPrice();
+
+    void restoreById(Long id);
 }

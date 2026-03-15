@@ -54,6 +54,7 @@ public class ProductRepositoryImpl implements ProductRepositoryCustom {
                 p.get("name"),
                 p.get("pricePerUnit"),
                 p.get("unitType"),
+                p.get("isDeleted"),
                 mediaSubquery
         ));
 

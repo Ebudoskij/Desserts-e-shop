@@ -1,5 +1,6 @@
 package com.ebudoskij.dessert_shop.model.dto.additionalItem;
 
+import com.ebudoskij.dessert_shop.model.dto.media.MediaResponseDto;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
@@ -25,5 +26,5 @@ public class AdditionalItemResponseDto {
     @Positive
     private BigDecimal extraPrice;
 
-    private List<com.ebudoskij.dessert_shop.model.dto.media.MediaResponseDto> imageUrls;
+    private List<MediaResponseDto> imageUrls;
 }

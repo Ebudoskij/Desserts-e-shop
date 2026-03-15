@@ -23,4 +23,6 @@ public interface ProductService {
     BigDecimal getMaxPrice();
 
     BigDecimal getMinPrice();
+
+    void restoreById(Long id);
 }

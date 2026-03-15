@@ -101,4 +101,10 @@ public class AdditionalItemController {
         additionalItemService.deleteById(id);
         return "redirect:/extras";
     }
+
+    @PostMapping("/{id}/restore")
+    public String restoreById(@PathVariable Long id){
+        additionalItemService.restoreById(id);
+        return "redirect:/extras";
+    }
 }
