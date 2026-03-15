@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <title>Редагувати Продукт - Магазин Десертів</title>
     <link rel="stylesheet" th:href="@{/css/style.css}">
+    <link rel="stylesheet" th:href="@{/css/item-detail.css}">
+    <link rel="stylesheet" th:href="@{/css/form-carousel.css}">
 </head>
 <body>
 
@@ -11,69 +13,117 @@
 
 <div class="container">
     <div class="page-header">
-        <h1>Редагувати Продукт</h1>
-        <a th:href="@{/products}" class="btn btn-secondary">Повернутися до Продуктів</a>
+        <a th:href="@{/products}" class="btn btn-secondary" style="margin-bottom: auto;">← Повернутися до Продуктів</a>
     </div>
 
-    <div class="form-card">
-        <form th:action="@{/products/{id}(id=${id})}" th:object="${product}" method="post" enctype="multipart/form-data">
-            <input type="hidden" name="_method" value="put" />
-            
-            <div class="form-group">
-                <label for="name">Назва</label>
-                <input type="text" id="name" th:field="*{name}" class="form-control" />
-                <span th:if="${#fields.hasErrors('name')}" th:errors="*{name}" class="text-danger">Помилка назви</span>
-            </div>
+    <!-- Wrap the entire two-col layout in the form -->
+    <form th:action="@{/products/{id}(id=${id})}" th:object="${product}" method="post" enctype="multipart/form-data">
+        <input type="hidden" name="_method" value="put" />
+        
+        <!-- Tracking Fields for Carousel -->
+        <input type="hidden" th:field="*{mainImageId}" id="mainImageId" />
+        <input type="hidden" th:field="*{newMainImageIndex}" id="newMainImageIndex" />
+        <div id="deletedImagesContainer" style="display: none;"></div>
 
-            <div class="form-group">
-                <label for="description">Опис</label>
-                <textarea id="description" th:field="*{description}" class="form-control" rows="4"></textarea>
-                <span th:if="${#fields.hasErrors('description')}" th:errors="*{description}" class="text-danger">Помилка опису</span>
+        <!-- Hidden data for JavaScript to load existing images -->
+        <div th:if="${productResponse.images != null}" style="display: none;">
+            <div th:each="img : ${productResponse.images}" 
+                 class="existing-image-data" 
+                 th:data-id="${img.id}" 
+                 th:data-url="${img.url}" 
+                 th:data-main="${productResponse.mainImageId == img.id ? 'true' : 'false'}">
             </div>
+        </div>
 
-            <div class="form-group">
-                <label for="pricePerUnit">Ціна за одиницю</label>
-                <input type="number" id="pricePerUnit" th:field="*{pricePerUnit}" class="form-control" step="0.01" />
-                <span th:if="${#fields.hasErrors('pricePerUnit')}" th:errors="*{pricePerUnit}" class="text-danger">Помилка ціни</span>
-            </div>
+        <div class="item-detail-container">
+            <!-- Left Column: Image Upload Carousel -->
+            <div class="item-carousel-section">
+                <!-- Dropzone Placeholder -->
+                <div class="upload-placeholder" id="uploadPlaceholder">
+                    <svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+                    <span class="placeholder-text">Натисніть або перетягніть фото</span>
+                    <span class="placeholder-subtext">(Можна обрати декілька)</span>
+                </div>
 
-            <div class="form-group">
-                <label for="categoryId">Категорія</label>
-                <select id="categoryId" th:field="*{categoryId}" class="form-control">
-                    <option th:each="cat : ${categories}" th:value="${cat.id}" th:text="${cat.name}"></option>
-                </select>
-                <span th:if="${#fields.hasErrors('categoryId')}" th:errors="*{categoryId}" class="text-danger">Помилка категорії</span>
-            </div>
+                <!-- Hidden Input -->
+                <input type="file" id="images" name="images" class="form-control" multiple accept="image/*" style="display: none;" />
 
-            <div class="form-group">
-                <label for="unitType">Одиниця виміру</label>
-                <select id="unitType" th:field="*{unitType}" class="form-control">
-                    <option th:each="unit : ${unitTypes}" th:value="${unit}" th:text="${unit}"></option>
-                </select>
-                <span th:if="${#fields.hasErrors('unitType')}" th:errors="*{unitType}" class="text-danger">Помилка одиниці виміру</span>
-            </div>
+                <!-- Active Carousel Zone -->
+                <div class="form-carousel-area" id="formCarouselArea">
+                    <div class="form-main-image-container">
+                        <img id="formMainImg" src="" alt="Головне фото">
+                        
+                        <div class="form-image-actions">
+                            <button type="button" class="form-btn-main-photo" id="btnSetMain">Встановити головною</button>
+                            <button type="button" class="form-btn-delete-photo" id="btnDelete">Видалити</button>
+                        </div>
+                        
+                        <button type="button" class="form-carousel-control prev" title="Previous">
+                            <svg viewBox="0 0 24 24"><path d="M15.41 16.59L10.83 12l4.58-4.59L14 6l-6 6 6 6 1.41-1.41z"/></svg>
+                        </button>
+                        <button type="button" class="form-carousel-control next" title="Next">
+                            <svg viewBox="0 0 24 24"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/></svg>
+                        </button>
+                    </div>
 
-            <div class="form-group" th:if="${productResponse.imageUrls != null and !productResponse.imageUrls.isEmpty()}">
-                <label>Існуючі зображення (Виберіть, щоб видалити)</label>
-                <div class="d-flex flex-wrap gap-3 mt-2">
-                    <div th:each="img : ${productResponse.imageUrls}" class="text-center">
-                        <img th:src="@{${img.url}}" alt="Product Image" style="max-height: 100px; border-radius: 5px; border: 1px solid #ccc; display: block; margin-bottom: 5px;"/>
-                        <input type="checkbox" th:field="*{deletedImageIds}" th:value="${img.id}" /> Видалити
+                    <div class="form-thumbnails" id="formThumbnails">
+                        <!-- Populated by JS -->
                     </div>
                 </div>
             </div>
 
-            <div class="form-group">
-                <label for="images">Нові зображення</label>
-                <input type="file" id="images" name="images" class="form-control" multiple accept="image/*" />
-            </div>
+            <!-- Right Column: Details Info Inputs -->
+            <div class="item-info-section">
+                <h1 class="item-title" style="margin-bottom: 0.5rem; font-size: 2rem;">Редагувати Продукт</h1>
+                
+                <div class="form-group">
+                    <label for="name">Назва</label>
+                    <input type="text" id="name" name="name" th:value="${product.name ?: productResponse.name}" class="form-control" />
+                    <span th:if="${#fields.hasErrors('name')}" th:errors="*{name}" class="text-danger">Помилка назви</span>
+                </div>
 
-            <div class="mt-3">
-                <button type="submit" class="btn btn-primary">Оновити Продукт</button>
+                <div class="form-group">
+                    <label for="description">Опис</label>
+                    <textarea id="description" name="description" class="form-control" rows="4" th:text="${product.description ?: productResponse.description}"></textarea>
+                    <span th:if="${#fields.hasErrors('description')}" th:errors="*{description}" class="text-danger">Помилка опису</span>
+                </div>
+
+                <!-- Price & Unit inline block -->
+                <div style="display: flex; gap: 1rem;">
+                    <div class="form-group" style="flex: 1;">
+                        <label for="pricePerUnit">Ціна за одиницю (₴)</label>
+                        <input type="number" id="pricePerUnit" name="pricePerUnit" th:value="${product.pricePerUnit ?: productResponse.pricePerUnit}" class="form-control" step="0.01" />
+                        <span th:if="${#fields.hasErrors('pricePerUnit')}" th:errors="*{pricePerUnit}" class="text-danger">Помилка ціни</span>
+                    </div>
+
+                    <div class="form-group" style="flex: 1;">
+                        <label for="unitType">Одиниця виміру</label>
+                        <select id="unitType" name="unitType" class="form-control">
+                            <option th:each="unit : ${unitTypes}" th:value="${unit}" th:text="${unit}" th:selected="${(product.unitType != null ? product.unitType : productResponse.unitType) == unit}"></option>
+                        </select>
+                        <span th:if="${#fields.hasErrors('unitType')}" th:errors="*{unitType}" class="text-danger">Помилка одиниці виміру</span>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="categoryId">Категорія</label>
+                    <select id="categoryId" name="categoryId" class="form-control">
+                        <option th:each="cat : ${categories}" th:value="${cat.id}" th:text="${cat.name}" th:selected="${(product.categoryId != null ? product.categoryId : productResponse.category.id) == cat.id}"></option>
+                    </select>
+                    <span th:if="${#fields.hasErrors('categoryId')}" th:errors="*{categoryId}" class="text-danger">Помилка категорії</span>
+                </div>
+
+                <div class="item-actions-block" style="margin-top: 1rem;">
+                    <button type="submit" class="btn btn-primary btn-order" style="min-width: 100%;">
+                        Оновити Продукт
+                    </button>
+                </div>
             </div>
-        </form>
-    </div>
+        </div>
+    </form>
 </div>
+
+<script th:src="@{/js/update-carousel.js}"></script>
 
 </body>
 </html>

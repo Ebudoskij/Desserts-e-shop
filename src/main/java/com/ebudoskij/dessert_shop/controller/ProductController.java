@@ -74,12 +74,12 @@ public class ProductController {
 
     @GetMapping("/{id}/update")
     public String updateProductPage(@PathVariable Long id, Model model){
-        model.addAttribute("productResponse", productService.getToUpdate(id));
+        model.addAttribute("productResponse", productService.getById(id));
         model.addAttribute("product", new ProductUpdateDto());
         model.addAttribute("categories", categoryService.getAll());
         model.addAttribute("unitTypes", UnitType.values());
 
-        return "product/newProduct";
+        return "product/updateProduct";
     }
 
     @PutMapping("/{id}")

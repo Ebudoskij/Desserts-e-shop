@@ -72,12 +72,12 @@ public class AdditionalItemController {
 
     @GetMapping("/{id}/update")
     public String updateAdditionalItemPage(@PathVariable Long id, Model model){
-        model.addAttribute("additionalItemResponse", additionalItemService.getToUpdate(id));
+        model.addAttribute("additionalItemResponse", additionalItemService.getById(id));
         model.addAttribute("additionalItem", new AdditionalItemUpdateDto());
         model.addAttribute("categories", categoryService.getAll());
         model.addAttribute("unitTypes", UnitType.values());
 
-        return "additionalItem/newAdditionalItem";
+        return "additionalItem/updateAdditionalItem";
     }
 
     @PutMapping("/{id}")

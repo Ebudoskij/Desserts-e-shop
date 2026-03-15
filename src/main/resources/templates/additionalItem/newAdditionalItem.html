@@ -2,8 +2,12 @@
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-    <title>Додати Додаток - Магазин Десертів</title>
+    <title th:text="${'Додати Додаток - Магазин Десертів'}"></title>
+    <!-- Keep base typography and layout -->
     <link rel="stylesheet" th:href="@{/css/style.css}">
+    <!-- Add specific styling -->
+    <link rel="stylesheet" th:href="@{/css/item-detail.css}">
+    <link rel="stylesheet" th:href="@{/css/form-carousel.css}">
 </head>
 <body>
 
@@ -11,41 +15,84 @@
 
 <div class="container">
     <div class="page-header">
-        <h1>Додати Новий Додаток</h1>
-        <a th:href="@{/extras}" class="btn btn-secondary">Повернутися до Додатків</a>
+        <a th:href="@{/extras}" class="btn btn-secondary" style="margin-bottom: auto;">← Повернутися до Додатків</a>
     </div>
 
-    <div class="form-card">
-        <form th:action="@{/extras}" th:object="${additionalItem}" method="post" enctype="multipart/form-data">
-            <div class="form-group">
-                <label for="name">Назва</label>
-                <input type="text" id="name" th:field="*{name}" class="form-control" />
-                <span th:if="${#fields.hasErrors('name')}" th:errors="*{name}" class="text-danger">Помилка назви</span>
+    <!-- Wrap the entire two-col layout in the form -->
+    <form th:action="@{/extras}" th:object="${additionalItem}" method="post" enctype="multipart/form-data">
+        <input type="hidden" th:field="*{mainImageIndex}" id="mainImageIndex" />
+
+        <div class="item-detail-container">
+            <!-- Left Column: Image Upload Carousel -->
+            <div class="item-carousel-section">
+                <!-- Dropzone Placeholder -->
+                <div class="upload-placeholder" id="uploadPlaceholder">
+                    <svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+                    <span class="placeholder-text">Натисніть або перетягніть фото</span>
+                    <span class="placeholder-subtext">(Можна обрати декілька)</span>
+                </div>
+
+                <!-- Hidden Input -->
+                <input type="file" id="images" name="images" class="form-control" multiple accept="image/*" style="display: none;" />
+
+                <!-- Active Carousel Zone -->
+                <div class="form-carousel-area" id="formCarouselArea">
+                    <div class="form-main-image-container">
+                        <img id="formMainImg" src="" alt="Головне фото">
+                        
+                        <div class="form-image-actions">
+                            <button type="button" class="form-btn-main-photo" id="btnSetMain">Встановити головною</button>
+                            <button type="button" class="form-btn-delete-photo" id="btnDelete">Видалити</button>
+                        </div>
+                        
+                        <button type="button" class="form-carousel-control prev" title="Previous">
+                            <svg viewBox="0 0 24 24"><path d="M15.41 16.59L10.83 12l4.58-4.59L14 6l-6 6 6 6 1.41-1.41z"/></svg>
+                        </button>
+                        <button type="button" class="form-carousel-control next" title="Next">
+                            <svg viewBox="0 0 24 24"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/></svg>
+                        </button>
+                    </div>
+
+                    <div class="form-thumbnails" id="formThumbnails">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
             </div>
 
-            <div class="form-group">
-                <label for="description">Опис</label>
-                <textarea id="description" th:field="*{description}" class="form-control" rows="4"></textarea>
-                <span th:if="${#fields.hasErrors('description')}" th:errors="*{description}" class="text-danger">Помилка опису</span>
-            </div>
+            <!-- Right Column: Details Info Inputs -->
+            <div class="item-info-section">
+                <h1 class="item-title" th:text="${'Додати Новий Додаток'}" style="margin-bottom: 0.5rem; font-size: 2rem;"></h1>
+                
+                <div class="form-group">
+                    <label for="name">Назва</label>
+                    <input type="text" id="name" th:field="*{name}" class="form-control" />
+                    <span th:if="${#fields.hasErrors('name')}" th:errors="*{name}" class="text-danger">Помилка назви</span>
+                </div>
 
-            <div class="form-group">
-                <label for="extraPrice">Ціна додатку</label>
-                <input type="number" id="extraPrice" th:field="*{extraPrice}" class="form-control" step="0.01" />
-                <span th:if="${#fields.hasErrors('extraPrice')}" th:errors="*{extraPrice}" class="text-danger">Помилка ціни</span>
-            </div>
+                <div class="form-group">
+                    <label for="description">Опис</label>
+                    <textarea id="description" th:field="*{description}" class="form-control" rows="4"></textarea>
+                    <span th:if="${#fields.hasErrors('description')}" th:errors="*{description}" class="text-danger">Помилка опису</span>
+                </div>
 
-            <div class="form-group">
-                <label for="images">Зображення</label>
-                <input type="file" id="images" name="images" class="form-control" multiple accept="image/*" />
-            </div>
+                <div class="form-group">
+                    <label for="extraPrice">Ціна додатку (₴)</label>
+                    <input type="number" id="extraPrice" th:field="*{extraPrice}" class="form-control" step="0.01" />
+                    <span th:if="${#fields.hasErrors('extraPrice')}" th:errors="*{extraPrice}" class="text-danger">Помилка ціни</span>
+                </div>
 
-            <div class="mt-3">
-                <button type="submit" class="btn btn-primary">Зберегти Додаток</button>
+                <div class="item-actions-block" style="margin-top: 1rem;">
+                    <button type="submit" class="btn btn-primary btn-order" style="min-width: 100%;">
+                        Зберегти Додаток
+                    </button>
+                </div>
             </div>
-        </form>
-    </div>
+        </div>
+    </form>
 </div>
+
+<!-- Upload Carousel logic -->
+<script th:src="@{/js/form-carousel.js}"></script>
 
 </body>
 </html>

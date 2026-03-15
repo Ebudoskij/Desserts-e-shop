@@ -34,5 +34,7 @@ public class ProductResponseDto {
 
     private List<MediaResponseDto> images;
 
+    private Long mainImageId;
+
     private Boolean isDeleted;
 }

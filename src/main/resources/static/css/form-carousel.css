@@ -1,0 +1,207 @@
+/* Form Carousel Styling */
+
+.upload-placeholder {
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    border: 2px dashed #cbd5e1;
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background-color: #f8fafc;
+    color: #64748b;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin-bottom: 1rem;
+    position: relative;
+    overflow: hidden;
+}
+
+.upload-placeholder:hover, .upload-placeholder.dragover {
+    background-color: #f1f5f9;
+    border-color: var(--caramel);
+    color: var(--dark-brown);
+}
+
+.upload-placeholder svg {
+    width: 48px;
+    height: 48px;
+    margin-bottom: 1rem;
+    fill: currentColor;
+}
+
+.upload-placeholder .placeholder-text {
+    font-size: 1.1rem;
+    font-weight: 500;
+}
+.upload-placeholder .placeholder-subtext {
+    font-size: 0.9rem;
+    opacity: 0.8;
+}
+
+/* When images are uploaded */
+.form-carousel-area {
+    display: none; /* hidden initially */
+    width: 100%;
+}
+
+.form-carousel-area.active {
+    display: block;
+}
+
+.form-main-image-container {
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    border-radius: 12px;
+    overflow: hidden;
+    position: relative;
+    background-color: #f8f9fa;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    margin-bottom: 1rem;
+}
+
+.form-main-image-container img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: opacity 0.3s ease-in-out;
+}
+
+/* Overlay Actions on Main Image */
+.form-image-actions {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: linear-gradient(transparent, rgba(0,0,0,0.7));
+    padding: 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.form-main-image-container:hover .form-image-actions {
+    opacity: 1;
+}
+
+.form-btn-main-photo, .form-btn-delete-photo {
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    transition: all 0.2s;
+}
+
+.form-btn-main-photo {
+    background-color: rgba(255, 255, 255, 0.9);
+    color: var(--dark-brown);
+}
+.form-btn-main-photo:hover {
+    background-color: var(--white);
+}
+
+.form-btn-main-photo.is-main {
+    background-color: var(--caramel);
+    color: var(--dark-brown);
+    cursor: default;
+    pointer-events: none;
+    opacity: 0.9;
+}
+
+.form-btn-delete-photo {
+    background-color: rgba(220, 53, 69, 0.9);
+    color: white;
+}
+.form-btn-delete-photo:hover {
+    background-color: rgba(220, 53, 69, 1);
+}
+
+/* Thumbs */
+.form-thumbnails {
+    display: flex;
+    gap: 10px;
+    overflow-x: auto;
+    width: 100%;
+    padding-bottom: 10px;
+    scrollbar-width: thin;
+}
+
+.form-thumbnails::-webkit-scrollbar { height: 6px; }
+.form-thumbnails::-webkit-scrollbar-thumb { background: #ccc; border-radius: 4px; }
+
+.form-thumbnail-wrapper {
+    position: relative;
+    width: 70px;
+    flex-shrink: 0;
+}
+
+.form-thumbnail {
+    width: 70px;
+    height: 70px;
+    border-radius: 8px;
+    cursor: pointer;
+    object-fit: cover;
+    opacity: 0.6;
+    transition: all 0.2s ease;
+    border: 2px solid transparent;
+}
+
+.form-thumbnail:hover {
+    opacity: 0.8;
+}
+
+.form-thumbnail.active {
+    opacity: 1;
+    border-color: var(--primary-color, var(--caramel));
+}
+
+.add-more-thumb {
+    width: 70px;
+    height: 70px;
+    border-radius: 8px;
+    border: 2px dashed #cbd5e1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: #64748b;
+    background: #f8fafc;
+    flex-shrink: 0;
+    transition: all 0.2s;
+}
+
+.add-more-thumb:hover {
+    border-color: var(--caramel);
+    color: var(--dark-brown);
+    background: #f1f5f9;
+}
+.add-more-thumb svg { width: 24px; height: 24px; fill: currentColor; }
+
+/* Control Arrows */
+.form-carousel-control {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    background: rgba(255, 255, 255, 0.8);
+    border: none;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.15);
+    transition: all 0.2s ease;
+    z-index: 10;
+}
+
+.form-carousel-control:hover { background: var(--white); box-shadow: 0 4px 8px rgba(0,0,0,0.2); }
+.form-carousel-control.prev { left: 10px; }
+.form-carousel-control.next { right: 10px; }
+.form-carousel-control svg { width: 20px; height: 20px; fill: var(--dark-brown); }

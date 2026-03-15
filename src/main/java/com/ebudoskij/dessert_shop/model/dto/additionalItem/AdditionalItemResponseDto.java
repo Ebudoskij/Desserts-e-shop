@@ -27,4 +27,6 @@ public class AdditionalItemResponseDto {
     private BigDecimal extraPrice;
 
     private List<MediaResponseDto> imageUrls;
+
+    private Long mainImageId;
 }

@@ -31,4 +31,11 @@ public class ProductUpdateDto {
     private List<MultipartFile> images;
 
     private List<Long> deletedImageIds;
+
+    // If this is set, an existing image becomes main
+    private Long mainImageId;
+
+    // If the user picks a BRAND NEW upload as main,
+    // we use the index of the 'images' list
+    private Integer newMainImageIndex;
 }
