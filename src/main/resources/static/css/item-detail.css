@@ -1,0 +1,220 @@
+/* Item Detail Page Layout */
+.item-detail-container {
+    display: flex;
+    gap: 3rem;
+    margin-top: 2rem;
+    margin-bottom: 3rem;
+    background-color: var(--white);
+    padding: 2rem;
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+}
+
+@media (max-width: 900px) {
+    .item-detail-container {
+        flex-direction: column;
+        gap: 2rem;
+    }
+}
+
+/* Left Column: Carousel */
+.item-carousel-section {
+    flex: 1;
+    min-width: 0; /* Prevents flex flex child from overflowing */
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.carousel-main-image-container {
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    border-radius: 12px;
+    overflow: hidden;
+    position: relative;
+    background-color: #f8f9fa;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    margin-bottom: 1rem;
+}
+
+.carousel-main-image-container img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: opacity 0.3s ease-in-out;
+}
+
+/* Carousel Controls */
+.carousel-control {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    background: rgba(255, 255, 255, 0.8);
+    border: none;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.15);
+    transition: all 0.2s ease;
+    z-index: 10;
+}
+
+.carousel-control:hover {
+    background: var(--white);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+
+.carousel-control.prev {
+    left: 10px;
+}
+
+.carousel-control.next {
+    right: 10px;
+}
+
+.carousel-control svg {
+    width: 20px;
+    height: 20px;
+    fill: var(--dark-brown);
+}
+
+/* Thumbnails */
+.carousel-thumbnails {
+    display: flex;
+    gap: 10px;
+    overflow-x: auto;
+    width: 100%;
+    padding-bottom: 10px;
+    scrollbar-width: thin;
+}
+
+.carousel-thumbnails::-webkit-scrollbar {
+    height: 6px;
+}
+
+.carousel-thumbnails::-webkit-scrollbar-thumb {
+    background: #ccc;
+    border-radius: 4px;
+}
+
+.carousel-thumbnail {
+    width: 70px;
+    height: 70px;
+    border-radius: 8px;
+    cursor: pointer;
+    object-fit: cover;
+    opacity: 0.6;
+    transition: all 0.2s ease;
+    border: 2px solid transparent;
+}
+
+.carousel-thumbnail:hover {
+    opacity: 0.8;
+}
+
+.carousel-thumbnail.active {
+    opacity: 1;
+    border-color: var(--primary-color);
+}
+
+
+/* Right Column: Details */
+.item-info-section {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.item-title {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: var(--dark-brown);
+    margin: 0;
+    line-height: 1.2;
+}
+
+.item-price-block {
+    display: flex;
+    align-items: baseline;
+    gap: 0.5rem;
+}
+
+.item-price {
+    font-size: 2rem;
+    font-weight: 600;
+    color: var(--primary-color);
+}
+
+.item-unit {
+    font-size: 1.2rem;
+    color: var(--text-color);
+    opacity: 0.8;
+}
+
+.item-description {
+    font-size: 1.1rem;
+    line-height: 1.6;
+    color: var(--text-color);
+    padding-top: 1rem;
+    border-top: 1px solid #eaeaea;
+}
+
+.item-status-badge {
+    display: inline-block;
+    padding: 0.4rem 1rem;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    width: fit-content;
+}
+
+.status-active {
+    background-color: #d1fae5;
+    color: #065f46;
+}
+
+.status-deleted {
+    background-color: #fee2e2;
+    color: #991b1b;
+}
+
+/* Action Buttons */
+.item-actions-block {
+    display: flex;
+    gap: 1rem;
+    margin-top: auto; /* Pushes to bottom if flex container has height */
+    padding-top: 1.5rem;
+    border-top: 1px solid #eaeaea;
+    flex-wrap: wrap;
+}
+
+.btn-order {
+    flex: 1;
+    min-width: 200px;
+    font-size: 1.1rem;
+    padding: 0.8rem 1.5rem;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.btn-order svg {
+    width: 20px;
+    height: 20px;
+    fill: currentColor;
+}
+
+.admin-actions {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+}

@@ -3,7 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <title>Extra Details - Dessert Shop</title>
+    <!-- Keep base typography and layout -->
     <link rel="stylesheet" th:href="@{/css/style.css}">
+    <!-- Add item specific styling -->
+    <link rel="stylesheet" th:href="@{/css/item-detail.css}">
 </head>
 <body>
 
@@ -11,47 +14,91 @@
 
 <div class="container">
     <div class="page-header">
-        <h1>Extra Item Details</h1>
-        <div>
-            <a th:href="@{/extras/{id}/update(id=${response.id})}" class="btn btn-primary">Edit Item</a>
-            <a th:href="@{/extras}" class="btn btn-secondary">Back to Extras</a>
-        </div>
+        <a th:href="@{/extras}" class="btn btn-secondary" style="margin-bottom: auto;">← Повернутись до пошуку</a>
     </div>
 
-    <div class="detail-card">
-        <div class="detail-row">
-            <div class="detail-label">ID</div>
-            <div class="detail-value" th:text="${response.id}">1</div>
-        </div>
-        <div class="detail-row">
-            <div class="detail-label">Name</div>
-            <div class="detail-value" th:text="${response.name}">Name</div>
-        </div>
-        <div class="detail-row">
-            <div class="detail-label">Description</div>
-            <div class="detail-value" th:text="${response.description}">Description</div>
-        </div>
-        <div class="detail-row">
-            <div class="detail-label">Extra Price</div>
-            <div class="detail-value" th:text="${'$' + #numbers.formatDecimal(response.extraPrice, 1, 2)}">$5.00</div>
-        </div>
-        <div class="detail-row">
-            <div class="detail-label">Status</div>
-            <div class="detail-value">
-                <span th:if="${response.isDeleted}" class="text-danger">Deleted</span>
-                <span th:unless="${response.isDeleted}">Active</span>
+    <div class="item-detail-container">
+        <!-- Left Column: Image Carousel -->
+        <div class="item-carousel-section" th:if="${response.imageUrls != null and !response.imageUrls.isEmpty()}">
+            <!-- Main Display Image -->
+            <div class="carousel-main-image-container">
+                <img id="carouselMainImage" th:src="@{${response.imageUrls[0].url}}" alt="Зображення додатку">
+                
+                <button class="carousel-control prev" th:if="${response.imageUrls.size() > 1}" title="Previous">
+                    <svg viewBox="0 0 24 24"><path d="M15.41 16.59L10.83 12l4.58-4.59L14 6l-6 6 6 6 1.41-1.41z"/></svg>
+                </button>
+                <button class="carousel-control next" th:if="${response.imageUrls.size() > 1}" title="Next">
+                    <svg viewBox="0 0 24 24"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/></svg>
+                </button>
+            </div>
+            
+            <!-- Thumbnails List -->
+            <div class="carousel-thumbnails" th:if="${response.imageUrls.size() > 1}">
+                <img th:each="img, stat : ${response.imageUrls}" 
+                     th:src="@{${img.url}}" 
+                     th:class="'carousel-thumbnail' + (${stat.index == 0} ? ' active' : '')"
+                     alt="Мініатюра">
             </div>
         </div>
-        <div class="detail-row" th:if="${response.imageUrls != null and !response.imageUrls.isEmpty()}">
-            <div class="detail-label">Images</div>
-            <div class="detail-value d-flex flex-wrap gap-2">
-                <div th:each="img : ${response.imageUrls}">
-                    <img th:src="@{${img.url}}" alt="Extra Image" style="max-height: 150px; border-radius: 5px; border: 1px solid #ccc;"/>
+        
+        <!-- Placeholder if no images -->
+        <div class="item-carousel-section" th:unless="${response.imageUrls != null and !response.imageUrls.isEmpty()}">
+             <div class="carousel-main-image-container" style="display: flex; align-items: center; justify-content: center; background: #eaeaea;">
+                 <span style="color: #999;">Немає фото</span>
+             </div>
+        </div>
+
+        <!-- Right Column: Details Info -->
+        <div class="item-info-section">
+            <h1 class="item-title" th:text="${response.name}">Назва додатку</h1>
+            
+            <div class="item-price-block">
+                <span class="item-price" th:text="${#numbers.formatDecimal(response.extraPrice, 1, 2)}">5.00</span>
+                <span class="item-price">₴</span>
+            </div>
+
+            <div class="item-description" th:text="${response.description}">
+                Опис додатку.
+            </div>
+
+            <div>
+                <span style="color: #666; margin-right: 0.5rem; font-weight: 500;">Статус:</span>
+                <span th:if="${response.isDeleted}" class="item-status-badge status-deleted">Видалений</span>
+                <span th:unless="${response.isDeleted}" class="item-status-badge status-active">Активний</span>
+            </div>
+
+            <!-- Action Buttons Area -->
+            <div class="item-actions-block">
+                <!-- Order Button -->
+                <button type="button" class="btn btn-primary btn-order" onclick="alert('Додано до кошика!');" th:if="${!response.isDeleted}">
+                    <svg viewBox="0 0 24 24"><path d="M7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-2zM1 2v2h2l3.6 7.59-1.35 2.45c-.16.28-.25.61-.25.96 0 1.1.9 2 2 2h12v-2H7.42c-.14 0-.25-.11-.25-.25l.03-.12.9-1.63h7.45c.75 0 1.41-.41 1.75-1.03l3.58-6.49c.08-.14.12-.31.12-.48 0-.55-.45-1-1-1H5.21l-.94-2H1zm16 16c-1.1 0-1.99.9-1.99 2s.89 2 1.99 2 2-.9 2-2-.9-2-2-2z"/></svg>
+                    Замовити
+                </button>
+                
+                <div class="admin-actions">
+                    <a th:href="@{/extras/{id}/update(id=${response.id})}" class="btn btn-secondary">Редагувати</a>
+                    
+                    <!-- Delete (if active) -->
+                    <form th:if="${!response.isDeleted}" th:action="@{/extras/{id}(id=${response.id})}" method="post" style="display: flex; margin: 0;">
+                        <input type="hidden" name="_method" value="delete" />
+                        <button type="button" class="btn btn-danger" onclick="openConfirmModal(this.closest('form'), 'Ви впевнені, що хочете видалити цей декор?');">Видалити</button>
+                    </form>
+                    
+                    <!-- Restore Placeholder (if deleted) -->
+                    <form th:if="${response.isDeleted}" th:action="@{/extras/{id}/restore(id=${response.id})}" th:method="post" style="display: flex; margin: 0;">
+                        <button type="button" class="btn" style="background-color: var(--success); color: white;" onclick="openConfirmModal(this.closest('form'), 'Ви впевнені, що хочете відновити цей декор?');">Відновити</button>
+                    </form>
                 </div>
             </div>
         </div>
     </div>
 </div>
+
+<div th:replace="~{fragments/modal :: confirmModal}"></div>
+<div th:replace="~{fragments/modal :: confirmModalScript}"></div>
+
+<!-- Carousel logic -->
+<script th:src="@{/js/carousel.js}"></script>
 
 </body>
 </html>

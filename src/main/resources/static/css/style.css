@@ -88,6 +88,7 @@ h1, h2, h3 {
     cursor: pointer;
     border: none;
     transition: background-color 0.3s, transform 0.1s;
+    text-align: center;
 }
 
 .btn:active {
@@ -345,6 +346,11 @@ select.form-control {
 .product-card:hover {
     transform: translateY(-4px);
     box-shadow: 0 8px 15px rgba(0,0,0,0.1);
+}
+
+.product-card.product-card-deleted {
+    opacity: 0.8;
+    filter: grayscale(100%);
 }
 
 .product-card-img-container {

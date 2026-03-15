@@ -5,6 +5,7 @@ import com.ebudoskij.dessert_shop.mapper.AdditionalItemMapper;
 import com.ebudoskij.dessert_shop.model.AdditionalItem;
 import com.ebudoskij.dessert_shop.model.dto.PageResponseDto;
 import com.ebudoskij.dessert_shop.model.dto.additionalItem.*;
+import com.ebudoskij.dessert_shop.model.dto.media.MediaResponseDto;
 import com.ebudoskij.dessert_shop.repository.AdditionalItemRepository;
 import com.ebudoskij.dessert_shop.service.AdditionalItemService;
 import com.ebudoskij.dessert_shop.service.MediaService;
@@ -16,6 +17,7 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.util.Comparator;
 
 @Service
 @RequiredArgsConstructor
@@ -43,13 +45,8 @@ public class AdditionalItemServiceImpl implements AdditionalItemService {
 
         AdditionalItemResponseDto responseDto = additionalItemMapper.toDto(item);
 
-        java.util.List<com.ebudoskij.dessert_shop.model.dto.media.MediaResponseDto> mediaDtos = mediaService.getEntityImages("AdditionalItem", id).stream()
-                .map(m -> {
-                    com.ebudoskij.dessert_shop.model.dto.media.MediaResponseDto dto = new com.ebudoskij.dessert_shop.model.dto.media.MediaResponseDto();
-                    dto.setId(m.getId());
-                    dto.setUrl(m.getUrl());
-                    return dto;
-                })
+        java.util.List<MediaResponseDto> mediaDtos = mediaService.getEntityImages("AdditionalItem", id).stream()
+                .sorted(Comparator.comparing(MediaResponseDto::getPriority))
                 .toList();
         responseDto.setImageUrls(mediaDtos);
 
@@ -100,7 +97,6 @@ public class AdditionalItemServiceImpl implements AdditionalItemService {
     @Override
     public void deleteById(Long id) {
         AdditionalItem item = additionalItemRepository.findById(id)
-                .filter(a -> !a.getIsDeleted())
                 .orElseThrow(() -> new EntityNotFoundException("AdditionalItem not found with id: " + id));
 
         item.setIsDeleted(true);
@@ -115,5 +111,14 @@ public class AdditionalItemServiceImpl implements AdditionalItemService {
     @Override
     public BigDecimal getMaxPrice() {
         return additionalItemRepository.findMaxPrice();
+    }
+
+    @Override
+    public void restoreById(Long id) {
+        AdditionalItem item = additionalItemRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("AdditionalItem not found with id: " + id));
+
+        item.setIsDeleted(false);
+        additionalItemRepository.save(item);
     }
 }
