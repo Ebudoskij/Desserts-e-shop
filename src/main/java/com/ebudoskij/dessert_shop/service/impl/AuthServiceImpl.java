@@ -9,6 +9,7 @@ import com.ebudoskij.dessert_shop.model.dto.auth.LoginDto;
 import com.ebudoskij.dessert_shop.model.dto.auth.RegisterDto;
 import com.ebudoskij.dessert_shop.model.enums.RoleType;
 import com.ebudoskij.dessert_shop.repository.RefreshTokenRepository;
+import com.ebudoskij.dessert_shop.repository.RoleRepository;
 import com.ebudoskij.dessert_shop.repository.UserRepository;
 import com.ebudoskij.dessert_shop.security.CookieUtils;
 import com.ebudoskij.dessert_shop.security.JwtUtils;
@@ -19,6 +20,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Comparator;
 
@@ -26,6 +28,7 @@ import java.util.Comparator;
 @RequiredArgsConstructor
 public class AuthServiceImpl implements AuthService {
     private final UserRepository userRepository;
+    private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtils jwtUtils;
     private final CookieUtils cookieUtils;
@@ -34,6 +37,7 @@ public class AuthServiceImpl implements AuthService {
     private final LoginAttemptService loginAttemptService;
 
     @Override
+    @Transactional
     public void loginUser(LoginDto loginDto,
                           HttpServletResponse response,
                           String ipAddress,
@@ -69,6 +73,7 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
+    @Transactional
     public void registerUser(RegisterDto registerDto) {
         if (userRepository.existsByEmail(registerDto.getEmail())) {
             throw new RegisterException("Користувач з такою поштою вже існує");
@@ -78,6 +83,10 @@ public class AuthServiceImpl implements AuthService {
 
         User newUser = mapper.toEntity(registerDto);
         newUser.setPasswordHash(encodedPassword);
+
+        Role userRole = roleRepository.findByName(RoleType.ROLE_USER)
+                .orElseThrow(() -> new RegisterException("Помилка сервера: Роль за замовчуванням не знайдена."));
+        newUser.setRoles(java.util.Set.of(userRole));
 
         userRepository.save(newUser);
     }
