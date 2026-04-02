@@ -1,8 +1,11 @@
 package com.ebudoskij.dessert_shop.model;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
@@ -20,18 +23,27 @@ public class AuditLog {
     private Long id;
 
     @ManyToOne
-    @JoinColumn(name = "order_id", nullable = true)
-    private Order order;
+    @JoinColumn(name = "user_id", nullable = true)
+    private User user;
 
-    @ManyToOne
-    @JoinColumn(name = "payment_id", nullable = true)
-    private Payment payment;
+    @Column(name = "entity_type", nullable = false, length = 50)
+    private String entityType;
+
+    @Column(name = "entity_id", nullable = false)
+    private Long entityId;
 
     @Column(name = "action_type", nullable = false, length = 50)
     private String actionType;
 
+    @Column(name = "changes", updatable = false)
+    @JdbcTypeCode(SqlTypes.JSON)
+    private JsonNode changes;
+
     @Column(name = "details", length = 500)
     private String details;
+
+    @Column(name = "ip_address", updatable = false, length = 45)
+    private String ipAddress;
 
     @CreatedDate
     @Column(name = "created_at", nullable = false, updatable = false)
