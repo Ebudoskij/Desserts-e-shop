@@ -14,9 +14,9 @@ public interface ProductRepository extends JpaRepository<Product, Long>,
         JpaSpecificationExecutor<Product>,
         ProductRepositoryCustom {
 
-    @Query("SELECT MAX(p.pricePerUnit) FROM Product p WHERE p.isDeleted = false")
+    @Query("SELECT MAX(p.pricePerUnit) FROM Product p")
     BigDecimal findMaxPrice();
 
-    @Query("SELECT MIN(p.pricePerUnit) FROM Product p WHERE p.isDeleted = false")
+    @Query("SELECT MIN(p.pricePerUnit) FROM Product p")
     BigDecimal findMinPrice();
 }

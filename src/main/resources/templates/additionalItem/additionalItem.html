@@ -71,7 +71,7 @@
             <!-- Action Buttons Area -->
             <div class="item-actions-block">
                 <div class="admin-actions" sec:authorize="hasRole('ADMIN')">
-                    <a th:href="@{/extras/{id}/update(id=${response.id})}" class="btn btn-secondary">Редагувати</a>
+                    <a th:if="${!response.isDeleted}" th:href="@{/extras/{id}/update(id=${response.id})}" class="btn btn-secondary">Редагувати</a>
                     
                     <!-- Delete (if active) -->
                     <form th:if="${!response.isDeleted}" th:action="@{/extras/{id}(id=${response.id})}" method="post" style="display: flex; margin: 0;">
@@ -81,7 +81,7 @@
                     
                     <!-- Restore Placeholder (if deleted) -->
                     <form th:if="${response.isDeleted}" th:action="@{/extras/{id}/restore(id=${response.id})}" th:method="post" style="display: flex; margin: 0;">
-                        <button type="button" class="btn" style="background-color: var(--success); color: white;" onclick="openConfirmModal(this.closest('form'), 'Ви впевнені, що хочете відновити цей декор?');">Відновити</button>
+                        <button type="button" class="btn btn-primary" onclick="openConfirmModal(this.closest('form'), 'Ви впевнені, що хочете відновити цей декор?');">Відновити</button>
                     </form>
                 </div>
             </div>

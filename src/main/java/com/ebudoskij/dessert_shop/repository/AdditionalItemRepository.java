@@ -14,9 +14,9 @@ public interface AdditionalItemRepository extends JpaRepository<AdditionalItem, 
         JpaSpecificationExecutor<AdditionalItem>,
         AdditionalItemRepositoryCustom {
 
-    @Query("SELECT MAX(a.extraPrice) FROM AdditionalItem a WHERE a.isDeleted = false")
+    @Query("SELECT MAX(a.extraPrice) FROM AdditionalItem a")
     BigDecimal findMaxPrice();
 
-    @Query("SELECT MIN(a.extraPrice) FROM AdditionalItem a WHERE a.isDeleted = false")
+    @Query("SELECT MIN(a.extraPrice) FROM AdditionalItem a")
     BigDecimal findMinPrice();
 }

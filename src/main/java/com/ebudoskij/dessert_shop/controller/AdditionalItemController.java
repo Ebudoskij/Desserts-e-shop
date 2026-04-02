@@ -24,7 +24,7 @@ public class AdditionalItemController {
 
     @GetMapping
     public String fetchAll(@ModelAttribute AdditionalItemFilterDto filter,
-                           @PageableDefault(size = 10, page = 0, sort = "id", direction = Sort.Direction.ASC)
+                           @PageableDefault(size = 4, page = 0, sort = "id", direction = Sort.Direction.ASC)
                            Pageable pageable,
                            Model model){
         PageResponseDto<AdditionalItemCardDto> response = additionalItemService.getAll(filter, pageable);

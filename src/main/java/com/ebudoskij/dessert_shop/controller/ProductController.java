@@ -28,7 +28,7 @@ public class ProductController {
 
     @GetMapping
     public String fetchAll(@ModelAttribute ProductFilteringDto filter,
-                           @PageableDefault(size = 10, page = 0, sort = "id", direction = Sort.Direction.ASC)
+                           @PageableDefault(size = 4, page = 0, sort = "id", direction = Sort.Direction.ASC)
                            Pageable pageable,
                            Model model){
         PageResponseDto<ProductCardDto> response = productService.getAll(filter, pageable);
@@ -48,6 +48,8 @@ public class ProductController {
         ProductResponseDto response = productService.getById(id);
 
         model.addAttribute("response", response);
+        model.addAttribute("additionalItems", additionalItemService.getAll(new AdditionalItemFilterDto(), Pageable.unpaged()).getContent());
+
         return "product/product";
     }
 

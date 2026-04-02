@@ -127,10 +127,6 @@
                     <form th:action="@{/products/{id}(id=${product.id})}" th:method="delete" style="display: flex; margin: 0;" th:if="${!product.isDeleted}" sec:authorize="hasRole('ADMIN')">
                         <button type="button" class="btn btn-sm btn-danger action-btn" onclick="openConfirmModal(this.closest('form'), 'Ви впевнені, що хочете видалити цей продукт?');">Видалити</button>
                     </form>
-                    
-                    <form th:if="${product.isDeleted}" th:action="@{/products/{id}/restore(id=${product.id})}" th:method="post" style="display: flex; margin: 0; width: 100%;" sec:authorize="hasRole('ADMIN')">
-                        <button type="button" class="btn btn-sm action-btn" style="background-color: var(--success, #28a745); color: white; width: 100%;" onclick="openConfirmModal(this.closest('form'), 'Ви впевнені, що хочете відновити цей продукт?');">Відновити</button>
-                    </form>
                 </div>
             </div>
         </div>

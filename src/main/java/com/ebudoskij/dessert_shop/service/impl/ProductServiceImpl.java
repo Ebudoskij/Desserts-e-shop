@@ -44,7 +44,6 @@ public class ProductServiceImpl implements ProductService {
     @Override
     public ProductResponseDto getById(Long id) {
         Product product = productRepository.findById(id)
-                .filter(p -> !p.getIsDeleted())
                 .orElseThrow(() -> new EntityNotFoundException("Product not found with id: " + id));
 
         ProductResponseDto responseDto = productMapper.toDto(product);

@@ -41,7 +41,6 @@ public class AdditionalItemServiceImpl implements AdditionalItemService {
     @Override
     public AdditionalItemResponseDto getById(Long id) {
         AdditionalItem item = additionalItemRepository.findById(id)
-                .filter(a -> !a.getIsDeleted())
                 .orElseThrow(() -> new EntityNotFoundException("AdditionalItem not found with id: " + id));
 
         AdditionalItemResponseDto responseDto = additionalItemMapper.toDto(item);
