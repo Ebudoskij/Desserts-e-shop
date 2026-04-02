@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8">
+    <title>Редагування Профілю - Магазин Десертів</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+    <link rel="stylesheet" th:href="@{/css/user.css}">
+</head>
+<body>
+
+<div th:replace="~{fragments/navbar :: navbar}"></div>
+
+<div class="user-profile-container">
+    <div class="profile-card modern-card">
+        <div class="profile-header">
+            <h2>Редагування профілю</h2>
+        </div>
+
+        <form th:action="@{/users/{id}(id=${response.id})}" th:method="patch" th:object="${user}" class="update-profile-form" id="updateUserForm">
+            
+            <div class="form-group unupdatable-field">
+                <label>Email</label>
+                <input type="email" class="form-control field-disabled" th:value="${response.email}" disabled readonly>
+                <small class="form-text text-muted">Ваш email не може бути змінений.</small>
+            </div>
+
+            <div class="form-group">
+                <label for="fullName">Ім'я</label>
+                <input type="text" id="fullName" th:field="*{fullName}" class="form-control" th:value="${response.fullName}" required>
+                <p class="error-msg" th:if="${#fields.hasErrors('fullName')}" th:errors="*{fullName}">Помилка</p>
+            </div>
+
+            <div class="form-group">
+                <label for="phoneNumber">Номер телефону</label>
+                <input type="text" id="phoneNumber" th:field="*{phoneNumber}" class="form-control" th:value="${response.phoneNumber}">
+                <p class="error-msg" th:if="${#fields.hasErrors('phoneNumber')}" th:errors="*{phoneNumber}">Помилка</p>
+            </div>
+
+            <hr style="margin: 20px 0; border: 0; border-top: 1px solid #e5e7eb;">
+            <h4 style="margin-bottom: 15px; font-size: 1.1rem;">Зміна паролю (необов'язково)</h4>
+
+            <div class="form-group">
+                <label for="newPassword">Новий пароль</label>
+                <input type="password" id="newPassword" th:field="*{newPassword}" class="form-control" placeholder="Залиште порожнім, щоб не змінювати">
+                <p class="error-msg" th:if="${#fields.hasErrors('newPassword')}" th:errors="*{newPassword}">Помилка</p>
+            </div>
+
+            <div class="form-group">
+                <label for="confirmPassword">Підтвердіть новий пароль</label>
+                <input type="password" id="confirmPassword" th:field="*{confirmPassword}" class="form-control">
+                <p class="error-msg" th:if="${#fields.hasErrors('confirmPassword')}" th:errors="*{confirmPassword}">Помилка</p>
+                <p class="error-msg" id="passwordMatchError" style="display: none;">Паролі не співпадають!</p>
+            </div>
+
+            <div class="profile-actions" style="margin-top: 25px; display: flex; gap: 15px;">
+                <button type="submit" class="btn btn-primary" style="flex: 1;">Зберегти зміни</button>
+                <a th:href="@{/users/profile}" class="btn btn-secondary" style="flex: 1; text-align: center;">Скасувати</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script th:src="@{/js/user-update.js}"></script>
+
+</body>
+</html>

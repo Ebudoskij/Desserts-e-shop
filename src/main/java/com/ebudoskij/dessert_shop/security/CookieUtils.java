@@ -59,6 +59,8 @@ public class CookieUtils {
         Cookie cookie = new Cookie(JWT_NAME, null);
         cookie.setPath("/");
         cookie.setHttpOnly(true);
+        cookie.setSecure(false);
+        cookie.setAttribute("SameSite", "Strict");
         cookie.setMaxAge(0); // This deletes the cookie immediately
         response.addCookie(cookie);
     }
@@ -67,6 +69,8 @@ public class CookieUtils {
         Cookie cookie = new Cookie(JWT_REFRESH_NAME, null);
         cookie.setPath("/");
         cookie.setHttpOnly(true);
+        cookie.setSecure(true);
+        cookie.setAttribute("SameSite", "Strict");
         cookie.setMaxAge(0); // This deletes the cookie immediately
         response.addCookie(cookie);
     }

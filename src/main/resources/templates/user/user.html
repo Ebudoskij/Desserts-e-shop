@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8">
+    <title>Профіль Користувача - Магазин Десертів</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+    <link rel="stylesheet" th:href="@{/css/user.css}">
+</head>
+<body>
+
+<div th:replace="~{fragments/navbar :: navbar}"></div>
+
+<div class="user-profile-container">
+    <div class="profile-card modern-card">
+        <div class="profile-header">
+            <div class="profile-avatar">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                </svg>
+            </div>
+            <h2>Мій профіль</h2>
+            <div class="admin-badge" sec:authorize="hasRole('ADMIN')">Адміністратор</div>
+        </div>
+
+        <div class="profile-details">
+            <div class="detail-group">
+                <span class="detail-label">Ім'я:</span>
+                <span class="detail-value" th:text="${response.fullName}">Ім'я</span>
+            </div>
+            <div class="detail-group">
+                <span class="detail-label">Email:</span>
+                <span class="detail-value" th:text="${response.email}">email@example.com</span>
+            </div>
+            <div class="detail-group">
+                <span class="detail-label">Телефон:</span>
+                <span class="detail-value" th:text="${response.phoneNumber != null ? response.phoneNumber : 'Не вказано'}">+380000000000</span>
+            </div>
+        </div>
+
+        <div class="profile-actions">
+            <a th:href="@{/users/{id}/update(id=${response.id})}" class="btn btn-primary" style="width: 100%;">Редагувати</a>
+            
+            <form th:action="@{/auth/logout}" method="post" style="width: 100%; margin-top: 10px;">
+                <button type="submit" class="btn btn-secondary" style="width: 100%;">Вийти з акаунту</button>
+            </form>
+
+            <form th:action="@{/users/{id}(id=${response.id})}" th:method="delete" style="width: 100%; margin-top: 10px;">
+                <button type="button" class="btn btn-danger" style="width: 100%;" onclick="openConfirmModal(this.closest('form'), 'Ви впевнені, що хочете видалити свій акаунт? Цю дію неможливо скасувати.');">Видалити</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div th:replace="~{fragments/modal :: confirmModal}"></div>
+<div th:replace="~{fragments/modal :: confirmModalScript}"></div>
+
+</body>
+</html>

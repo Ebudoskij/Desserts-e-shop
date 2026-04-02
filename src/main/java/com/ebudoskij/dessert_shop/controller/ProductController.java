@@ -1,8 +1,10 @@
 package com.ebudoskij.dessert_shop.controller;
 
 import com.ebudoskij.dessert_shop.model.dto.PageResponseDto;
+import com.ebudoskij.dessert_shop.model.dto.additionalItem.AdditionalItemFilterDto;
 import com.ebudoskij.dessert_shop.model.dto.product.*;
 import com.ebudoskij.dessert_shop.model.enums.UnitType;
+import com.ebudoskij.dessert_shop.service.AdditionalItemService;
 import com.ebudoskij.dessert_shop.service.CategoryService;
 import com.ebudoskij.dessert_shop.service.ProductService;
 import jakarta.validation.Valid;
@@ -22,6 +24,7 @@ public class ProductController {
 
     private final ProductService productService;
     private final CategoryService categoryService;
+    private final AdditionalItemService additionalItemService;
 
     @GetMapping
     public String fetchAll(@ModelAttribute ProductFilteringDto filter,
@@ -34,6 +37,7 @@ public class ProductController {
         model.addAttribute("categories", categoryService.getAll());
         model.addAttribute("minPrice", productService.getMinPrice());
         model.addAttribute("maxPrice", productService.getMaxPrice());
+        model.addAttribute("additionalItems", additionalItemService.getAll(new AdditionalItemFilterDto(), Pageable.unpaged()).getContent());
 
         return "product/products";
     }
@@ -44,7 +48,6 @@ public class ProductController {
         ProductResponseDto response = productService.getById(id);
 
         model.addAttribute("response", response);
-
         return "product/product";
     }
 

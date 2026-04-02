@@ -26,6 +26,17 @@
             Невірний email або пароль!
         </div>
 
+        <div th:if="${loginError}" class="auth-alert-error">
+            <span th:text="${loginError}"></span>
+            <div th:if="${remainingAttempts != null}" style="margin-top: 5px; font-size: 0.9em;">
+                Використано спроб: <strong th:text="${attempts}"></strong>.
+                Залишилось спроб: <strong th:text="${remainingAttempts}"></strong>.
+            </div>
+            <div th:if="${isLocked != null}" style="margin-top: 5px; font-size: 0.9em; font-weight: bold;">
+                Акаунт заблоковано через перевищення кількості спроб.
+            </div>
+        </div>
+
         <div th:if="${logout}" class="auth-alert-success">
             Ви вийшли з акаунту
         </div>

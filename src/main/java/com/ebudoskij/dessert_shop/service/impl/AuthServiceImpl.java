@@ -94,6 +94,7 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public void logout(HttpServletResponse response) {
         cookieUtils.clearJwtCookie(response);
+        cookieUtils.clearJwtRefreshCookie(response);
         SecurityContextHolder.clearContext();
     }
 }

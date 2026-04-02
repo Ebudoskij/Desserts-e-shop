@@ -60,12 +60,20 @@ public class AdditionalItemRepositoryImpl implements AdditionalItemRepositoryCus
         }
 
         // 6. Execute Paged Query
-        List<AdditionalItemCardDto> results = entityManager.createQuery(query)
-                .setFirstResult((int) pageable.getOffset())
-                .setMaxResults(pageable.getPageSize())
-                .getResultList();
+        List<AdditionalItemCardDto> results;
 
-        return new PageImpl<>(results, pageable, getTotalCount(spec));
+        if (pageable.isUnpaged()) {
+            results = entityManager.createQuery(query).getResultList();
+
+            return new PageImpl<>(results, Pageable.unpaged(), results.size());
+        } else {
+            results = entityManager.createQuery(query)
+                    .setFirstResult((int) pageable.getOffset())
+                    .setMaxResults(pageable.getPageSize())
+                    .getResultList();
+
+            return new PageImpl<>(results, pageable, getTotalCount(spec));
+        }
     }
 
     private long getTotalCount(Specification<AdditionalItem> spec) {

@@ -32,6 +32,8 @@ public class ProductCardDto {
     @NotNull
     private UnitType unitType;
 
+    private Boolean customizable;
+
     private Boolean isDeleted;
 
     private String mainImageUrl;

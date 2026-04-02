@@ -1,28 +1,31 @@
 package com.ebudoskij.dessert_shop.security;
 
 import com.ebudoskij.dessert_shop.exception.InvalidTokenException;
+import com.ebudoskij.dessert_shop.service.impl.CustomUserDetailsService;
 import com.ebudoskij.dessert_shop.utils.HttpRequestUtils;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
-import java.util.List;
 
 @Component
 @RequiredArgsConstructor
+@Slf4j
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtUtils jwtUtils;
     private final CookieUtils cookieUtils;
+    private final CustomUserDetailsService customUserDetailsService;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request,
@@ -60,6 +63,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
         catch (Exception e) {
             SecurityContextHolder.clearContext();
+
+            logger.error(String.format("JWT Filter error on %s: %s - %s",
+                    request.getRequestURI(),
+                    e.getClass().getSimpleName(),
+                    e.getMessage()));
         }
 
         filterChain.doFilter(request, response);
@@ -67,14 +75,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private void authenticateUser(String token, HttpServletRequest request) {
         String userEmail = jwtUtils.extractEmail(token);
-        String roleString = jwtUtils.extractRole(token);
 
         if (userEmail != null) {
-            SimpleGrantedAuthority authority = new SimpleGrantedAuthority(roleString);
+            UserDetails userDetails = customUserDetailsService.loadUserByUsername(userEmail);
+
             UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
-                    userEmail,
+                    userDetails,                    // ← was: userEmail (String)
                     null,
-                    List.of(authority)
+                    userDetails.getAuthorities()    // ← taken from loaded details, not the token
             );
             authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
             SecurityContextHolder.getContext().setAuthentication(authToken);

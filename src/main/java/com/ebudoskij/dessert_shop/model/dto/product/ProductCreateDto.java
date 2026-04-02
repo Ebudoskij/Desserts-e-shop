@@ -28,6 +28,8 @@ public class ProductCreateDto {
     @NotNull
     private UnitType unitType;
 
+    private Boolean customizable;
+
     private List<MultipartFile> images;
 
     private Integer mainImageIndex;

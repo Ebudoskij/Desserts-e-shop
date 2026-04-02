@@ -38,4 +38,17 @@ public class OrderItem {
     @ColumnDefault("false")
     @Column(name = "is_deleted", nullable = false)
     private Boolean isDeleted;
+
+    @ColumnDefault("false")
+    @Column(name = "custom_decor", nullable = false)
+    private Boolean customDecor;
+
+    @Column(name = "custom_decor_description", length = 500)
+    private String customDecorDescription;
+
+    @Column(name = "custom_decor_price", precision = 10, scale = 2)
+    private BigDecimal customDecorPrice;
+
+    @Column(name = "admin_comment", length = 500)
+    private String adminComment;
 }

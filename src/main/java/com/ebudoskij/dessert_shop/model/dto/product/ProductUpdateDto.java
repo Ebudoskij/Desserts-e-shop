@@ -28,6 +28,8 @@ public class ProductUpdateDto {
     @NotNull
     private UnitType unitType;
 
+    private Boolean customizable;
+
     private List<MultipartFile> images;
 
     private List<Long> deletedImageIds;
