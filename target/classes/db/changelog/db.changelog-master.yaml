@@ -9,3 +9,13 @@ databaseChangeLog:
       file: db/changelog/changes/004-add-login-attempts.sql
   - include:
       file: db/changelog/changes/005-add-refresh-token.sql
+  - include:
+      file: db/changelog/changes/006-populate-roles-table-on-start.sql
+  - include:
+      file: db/changelog/changes/007-add-custom-orders.sql
+  - include:
+      file: db/changelog/changes/008-cart-flow.sql
+  - include:
+      file: db/changelog/changes/009-add-total-price-order.sql
+  - include:
+      file: db/changelog/changes/010-custom-decor-flow.sql

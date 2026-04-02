@@ -34,7 +34,11 @@
                             <input type="radio" name="additionalItemId" th:value="${ai.id}" onchange="toggleOrderCustomDecorFields()" style="margin-bottom: 8px;">
                             <img th:if="${ai.mainImageUrl != null}" th:src="${ai.mainImageUrl}" style="width: 80px; height: 80px; object-fit: cover; border-radius: 8px; margin-bottom: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
                             <div th:unless="${ai.mainImageUrl != null}" style="width: 80px; height: 80px; background: #f0f0f0; border-radius: 8px; margin-bottom: 8px; display:flex; align-items:center; justify-content:center; color:#ccc;">No Image</div>
-                            <span th:text="${ai.name}" style="font-weight: bold; font-size: 0.9rem; line-height: 1.2;"></span>
+                            <a th:href="@{/extras/{id}(id=${ai.id})}"
+                               style="color: inherit; text-decoration: none;"
+                               onmouseover="this.style.textDecoration='underline'"
+                               onmouseout="this.style.textDecoration='none'"
+                               th:text="${ai.name}">Назва декору</a>
                             <span th:text="${'+ ' + ai.extraPrice + ' ₴'}" style="color: var(--primary-color); font-size: 0.9rem;"></span>
                         </label>
                     </th:block>

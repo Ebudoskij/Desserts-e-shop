@@ -1,5 +1,6 @@
 <!DOCTYPE html>
-<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <head>
     <meta charset="UTF-8">
     <title>Extra Details - Dessert Shop</title>
@@ -13,7 +14,7 @@
 <div th:replace="~{fragments/navbar :: navbar}"></div>
 
 <div class="container">
-    <div class="page-header">
+    <div class="page-header" sec:authorize="hasRole('ADMIN')">
         <a th:href="@{/extras}" class="btn btn-secondary" style="margin-bottom: auto;">← Повернутись до пошуку</a>
     </div>
 
@@ -61,7 +62,7 @@
                 Опис додатку.
             </div>
 
-            <div>
+            <div sec:authorize="hasRole('ADMIN')">
                 <span style="color: #666; margin-right: 0.5rem; font-weight: 500;">Статус:</span>
                 <span th:if="${response.isDeleted}" class="item-status-badge status-deleted">Видалений</span>
                 <span th:unless="${response.isDeleted}" class="item-status-badge status-active">Активний</span>
@@ -69,7 +70,7 @@
 
             <!-- Action Buttons Area -->
             <div class="item-actions-block">
-                <div class="admin-actions">
+                <div class="admin-actions" sec:authorize="hasRole('ADMIN')">
                     <a th:href="@{/extras/{id}/update(id=${response.id})}" class="btn btn-secondary">Редагувати</a>
                     
                     <!-- Delete (if active) -->
