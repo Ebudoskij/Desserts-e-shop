@@ -29,4 +29,6 @@ public class AdditionalItemResponseDto {
     private List<MediaResponseDto> imageUrls;
 
     private Long mainImageId;
+
+    private Boolean isDeleted;
 }

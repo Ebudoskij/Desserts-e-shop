@@ -1,10 +1,25 @@
 <nav class="navbar" xmlns:th="http://www.thymeleaf.org" th:fragment="navbar" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
     <a th:href="@{/}" class="navbar-brand">Магазин Десертів</a>
-    <ul class="navbar-nav">
-        <li><a th:href="@{/products}" class="nav-link" th:classappend="${#execInfo.templateName.startsWith('product')} ? 'active'">Продукти</a></li>
-        <li><a th:href="@{/categories}" class="nav-link" th:classappend="${#execInfo.templateName.startsWith('category')} ? 'active'" sec:authorize="hasRole('ADMIN')">Категорії</a></li>
-        <li><a th:href="@{/orders}" class="nav-link" th:classappend="${#execInfo.templateName.startsWith('order')} ? 'active'" sec:authorize="hasAnyRole('ADMIN', 'USER')">Замовлення</a></li>
-        <li><a th:href="@{/extras}" class="nav-link" th:classappend="${#execInfo.templateName.startsWith('additionalItem')} ? 'active'" sec:authorize="hasRole('ADMIN')">Додатки</a></li>
-        <li><a th:href="@{/auditLog}" class="nav-link" th:classappend="${#execInfo.templateName.startsWith('auditLog') or #execInfo.templateName == 'index'} ? 'active'" sec:authorize="hasRole('ADMIN')">Аудит</a></li>
-    </ul>
+    <div style="display: flex; align-items: center; gap: 1.5rem;">
+        <ul class="navbar-nav">
+            <li><a th:href="@{/products}" class="nav-link" th:classappend="${#execInfo.templateName.startsWith('product')} ? 'active'">Продукти</a></li>
+            <li><a th:href="@{/categories}" class="nav-link" th:classappend="${#execInfo.templateName.startsWith('category')} ? 'active'" sec:authorize="hasRole('ADMIN')">Категорії</a></li>
+            <li><a th:href="@{/orders}" class="nav-link" th:classappend="${#execInfo.templateName.startsWith('order/order')} ? 'active'" sec:authorize="hasAnyRole('ADMIN', 'USER')">Замовлення</a></li>
+            <li><a th:href="@{/orders/cart}" class="nav-link" th:classappend="${#execInfo.templateName.startsWith('order/cart')} ? 'active'" sec:authorize="hasRole('USER')">Кошик</a></li>
+            <li><a th:href="@{/extras}" class="nav-link" th:classappend="${#execInfo.templateName.startsWith('additionalItem')} ? 'active'" sec:authorize="hasRole('ADMIN')">Додатки</a></li>
+            <li><a th:href="@{/auditLog}" class="nav-link" th:classappend="${#execInfo.templateName.startsWith('auditLog') or #execInfo.templateName == 'index'} ? 'active'" sec:authorize="hasRole('ADMIN')">Аудит</a></li>
+        </ul>
+        
+        <div sec:authorize="isAuthenticated()" class="navbar-profile">
+            <a th:href="@{/users/profile}" class="nav-link" title="Мій профіль" style="display: flex; align-items: center; justify-content: center; padding: 5px; border-radius: 50%; background: #f3f4f6; color: var(--light-brown); transition: all 0.2s ease;">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="24" height="24">
+                    <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                </svg>
+            </a>
+        </div>
+        
+        <div sec:authorize="!isAuthenticated()" class="navbar-auth">
+            <a th:href="@{/auth/login}" class="nav-link">Увійти</a>
+        </div>
+    </div>
 </nav>

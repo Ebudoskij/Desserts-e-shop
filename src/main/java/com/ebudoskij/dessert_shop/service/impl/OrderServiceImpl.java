@@ -1,88 +1,330 @@
 package com.ebudoskij.dessert_shop.service.impl;
 
 import com.ebudoskij.dessert_shop.exception.EntityNotFoundException;
-import com.ebudoskij.dessert_shop.mapper.OrderMapper;
-import com.ebudoskij.dessert_shop.model.Order;
+import com.ebudoskij.dessert_shop.model.*;
 import com.ebudoskij.dessert_shop.model.dto.PageResponseDto;
-import com.ebudoskij.dessert_shop.model.dto.order.OrderCreateDto;
-import com.ebudoskij.dessert_shop.repository.OrderRepository;
+import com.ebudoskij.dessert_shop.model.dto.order.*;
+import com.ebudoskij.dessert_shop.model.enums.OrderStatusType;
+import com.ebudoskij.dessert_shop.repository.*;
+import com.ebudoskij.dessert_shop.service.MediaService;
 import com.ebudoskij.dessert_shop.service.OrderService;
+import com.ebudoskij.dessert_shop.utils.specifications.OrderSpecificationsUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Sort;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 public class OrderServiceImpl implements OrderService {
 
     private final OrderRepository orderRepository;
-    private final OrderMapper orderMapper;
+    private final OrderItemRepository orderItemRepository;
+    private final ProductRepository productRepository;
+    private final AdditionalItemRepository additionalItemRepository;
+    private final OrderStatusRepository orderStatusRepository;
+    private final UserRepository userRepository;
+    private final MediaService mediaService;
+
+    // -------------------------------------------------------------------------
+    // Read
+    // -------------------------------------------------------------------------
 
     @Override
     public Order getById(Long id) {
         return orderRepository.findById(id)
-                .filter(o -> !o.getIsDeleted())
                 .orElseThrow(() -> new EntityNotFoundException("Order not found with id: " + id));
     }
 
     @Override
-    public void createOrder(OrderCreateDto dto) {
-        Order order = orderMapper.toEntity(dto);
-        order.setIsDeleted(false);
-        // Note: Additional logic for parsing Status dropdown or inserting orderItems might be needed if they are set on create
+    public PageResponseDto<Order> getAll(OrderFilteringDto filter, Pageable pageable) {
+        Specification<Order> spec = OrderSpecificationsUtil.buildFilters(filter);
+        Page<Order> page = orderRepository.findAll(spec, pageable);
+        return new PageResponseDto<>(page);
+    }
+
+    @Override
+    public BigDecimal getMinPrice() {
+        return BigDecimal.ZERO;
+    }
+
+    @Override
+    public BigDecimal getMaxPrice() {
+        return BigDecimal.ZERO;
+    }
+
+    // -------------------------------------------------------------------------
+    // Cart flow
+    // -------------------------------------------------------------------------
+
+    @Override
+    public Order getCart() {
+        User user = getCurrentUser();
+        return orderRepository
+                .findByUserIdAndStatusNameAndIsDeletedFalse(user.getId(), OrderStatusType.CREATED.name())
+                .orElseGet(() -> {
+                    Order newOrder = new Order();
+                    newOrder.setUser(user);
+                    newOrder.setStatus(getStatus(OrderStatusType.CREATED));
+                    newOrder.setIsDeleted(false);
+                    newOrder.setTotalPrice(BigDecimal.ZERO);
+                    return orderRepository.save(newOrder);
+                });
+    }
+
+    @Override
+    @Transactional
+    public void addToCart(CartItemCreateDto dto) {
+        Order cart = getCart();
+
+        Product product = productRepository.findById(dto.getProductId())
+                .orElseThrow(() -> new EntityNotFoundException("Product not found"));
+
+        if (!product.getCustomizable() && Boolean.TRUE.equals(dto.getCustomDecor())) {
+            throw new IllegalArgumentException("This product is not customizable.");
+        }
+
+        AdditionalItem additionalItem = null;
+        if (dto.getAdditionalItemId() != null) {
+            additionalItem = additionalItemRepository.findById(dto.getAdditionalItemId())
+                    .orElseThrow(() -> new EntityNotFoundException("Additional item not found"));
+
+            if (Boolean.TRUE.equals(dto.getCustomDecor())) {
+                throw new IllegalArgumentException("Cannot select both standard additional item and custom decor.");
+            }
+        }
+
+        OrderItem item = new OrderItem();
+        item.setOrder(cart);
+        item.setProduct(product);
+        item.setAdditionalItem(additionalItem);
+        item.setQuantity(dto.getQuantity());
+        item.setIsDeleted(false);
+        item.setCustomDecor(dto.getCustomDecor());
+        item.setCustomDecorDescription(dto.getCustomDecorDescription());
+
+        BigDecimal productPriceTotal = product.getPricePerUnit().multiply(BigDecimal.valueOf(dto.getQuantity()));
+        if (additionalItem != null && !dto.getCustomDecor()) {
+            BigDecimal extrasTotal = additionalItem.getExtraPrice().multiply(BigDecimal.valueOf(dto.getQuantity()));
+            item.setPriceAtPurchase(productPriceTotal.add(extrasTotal));
+        } else {
+            item.setPriceAtPurchase(productPriceTotal); // custom decor price added later by admin
+        }
+
+        item = orderItemRepository.save(item);
+
+        if (Boolean.TRUE.equals(dto.getCustomDecor()) && dto.getCustomImages() != null && !dto.getCustomImages().isEmpty()) {
+            mediaService.saveEntityImages("ORDER_ITEM_CUSTOM_IMAGE", item.getId(), dto.getCustomImages(), 0);
+        }
+
+        if (cart.getItems() != null && !cart.getItems().contains(item)) {
+            cart.getItems().add(item);
+        } else if (cart.getItems() == null) {
+            cart.setItems(new java.util.ArrayList<>(List.of(item)));
+        }
+        recalculateOrderTotal(cart);
+    }
+
+    @Override
+    @Transactional
+    public void updateCartItemQuantity(Long orderItemId, Integer newQuantity) {
+        Order cart = getCart();
+        OrderItem item = orderItemRepository.findById(orderItemId)
+                .orElseThrow(() -> new EntityNotFoundException("Item not found"));
+
+        if (!item.getOrder().getId().equals(cart.getId())) {
+            throw new IllegalArgumentException("Item does not belong to your cart");
+        }
+
+        item.setQuantity(newQuantity);
+
+        BigDecimal productPriceTotal = item.getProduct().getPricePerUnit().multiply(BigDecimal.valueOf(newQuantity));
+        if (item.getAdditionalItem() != null && !item.getCustomDecor()) {
+            BigDecimal extrasTotal = item.getAdditionalItem().getExtraPrice().multiply(BigDecimal.valueOf(newQuantity));
+            item.setPriceAtPurchase(productPriceTotal.add(extrasTotal));
+        } else {
+            item.setPriceAtPurchase(productPriceTotal);
+        }
+
+        orderItemRepository.save(item);
+        cart = orderRepository.findById(cart.getId()).orElseThrow();
+        recalculateOrderTotal(cart);
+    }
+
+    @Override
+    @Transactional
+    public void removeCartItem(Long orderItemId) {
+        Order cart = getCart();
+        OrderItem item = orderItemRepository.findById(orderItemId)
+                .orElseThrow(() -> new EntityNotFoundException("Item not found"));
+
+        if (!item.getOrder().getId().equals(cart.getId())) {
+            throw new IllegalArgumentException("Item does not belong to your cart");
+        }
+
+        item.setIsDeleted(true);
+        orderItemRepository.save(item);
+
+        cart = orderRepository.findById(cart.getId()).orElseThrow();
+        recalculateOrderTotal(cart);
+    }
+
+    @Override
+    @Transactional
+    public void checkout(OrderCheckoutDto dto) {
+        Order cart = getCart();
+
+        if (cart.getItems() == null || cart.getItems().stream().allMatch(OrderItem::getIsDeleted)) {
+            throw new IllegalStateException("Cart is empty");
+        }
+
+        cart.setDeliveryAddress(dto.getDeliveryAddress());
+        cart.setDeliveryDate(LocalDateTime.parse(dto.getDeliveryDate()).atZone(ZoneId.systemDefault()).toInstant());
+
+        boolean hasCustomDecor = cart.getItems().stream()
+                .filter(i -> !i.getIsDeleted())
+                .anyMatch(item -> Boolean.TRUE.equals(item.getCustomDecor()));
+
+        if (hasCustomDecor) {
+            cart.setStatus(getStatus(OrderStatusType.PENDING_CUSTOM_REVIEW));
+        } else {
+            cart.setStatus(getStatus(OrderStatusType.CONFIRMED));
+        }
+
+        orderRepository.save(cart);
+    }
+
+    // -------------------------------------------------------------------------
+    // Custom decor flow
+    // -------------------------------------------------------------------------
+
+    @Override
+    @Transactional
+    public void reviewCustomOrder(Long orderId, AdminReviewDTO dto) {
+        Order order = getById(orderId);
+        if (!order.getStatus().getName().equals(OrderStatusType.PENDING_CUSTOM_REVIEW.name())) {
+            throw new IllegalStateException("Order is not pending custom review");
+        }
+
+        // Build a lookup map so we can match DTO items to entities efficiently
+        Map<Long, OrderItem> itemMap = order.getItems().stream()
+                .filter(i -> Boolean.TRUE.equals(i.getCustomDecor()) && !Boolean.TRUE.equals(i.getIsDeleted()))
+                .collect(Collectors.toMap(OrderItem::getId, i -> i));
+
+        for (AdminOrderItemReviewDto reviewItem : dto.getItems()) {
+            OrderItem item = itemMap.get(reviewItem.getOrderItemId());
+            if (item == null) {
+                throw new EntityNotFoundException(
+                        "Custom decor order item not found: " + reviewItem.getOrderItemId());
+            }
+
+            item.setCustomDecorPrice(reviewItem.getCustomDecorPrice());
+            item.setAdminComment(reviewItem.getAdminComment());
+
+            // Add the custom decor price on top of the base product price
+            BigDecimal decorExtra = reviewItem.getCustomDecorPrice()
+                    .multiply(BigDecimal.valueOf(item.getQuantity()));
+            // priceAtPurchase currently holds product price only — add decor on top
+            BigDecimal baseProductPrice = item.getProduct().getPricePerUnit()
+                    .multiply(BigDecimal.valueOf(item.getQuantity()));
+            item.setPriceAtPurchase(baseProductPrice.add(decorExtra));
+
+            orderItemRepository.save(item);
+        }
+
+        // Refresh and recalculate total
+        order = orderRepository.findById(orderId).orElseThrow();
+        recalculateOrderTotal(order);
+
+        order.setStatus(getStatus(OrderStatusType.WAITING_FOR_CLIENT_APPROVAL));
         orderRepository.save(order);
     }
 
     @Override
-    public void updateById(Long id, OrderCreateDto dto) {
-        Order existingOrder = getById(id);
-        orderMapper.updateEntityFromDto(dto, existingOrder);
-        // Additional linking to OrderStatus or OrderItems if needed
-        orderRepository.save(existingOrder);
+    @Transactional
+    @PreAuthorize("@orderSecurity.isOwner(#orderId)")
+    public void confirmCustomOrder(Long orderId) {
+        Order order = getById(orderId);
+        if (!order.getStatus().getName().equals(OrderStatusType.WAITING_FOR_CLIENT_APPROVAL.name())) {
+            throw new IllegalStateException("Order is not awaiting client approval");
+        }
+        order.setStatus(getStatus(OrderStatusType.CONFIRMED));
+        orderRepository.save(order);
     }
 
     @Override
+    @Transactional
+    @PreAuthorize("@orderSecurity.isOwner(#orderId)")
+    public void rejectCustomOrder(Long orderId) {
+        Order order = getById(orderId);
+        if (!order.getStatus().getName().equals(OrderStatusType.WAITING_FOR_CLIENT_APPROVAL.name())) {
+            throw new IllegalStateException("Order is not awaiting client approval");
+        }
+        order.setStatus(getStatus(OrderStatusType.REJECTED));
+        orderRepository.save(order);
+    }
+
+    @Override
+    @Transactional
+    public void cancelOrder(Long orderId) {
+        Order order = getById(orderId);
+        order.setStatus(getStatus(OrderStatusType.CANCELLED));
+        orderRepository.save(order);
+    }
+
+    // -------------------------------------------------------------------------
+    // Mutations
+    // -------------------------------------------------------------------------
+
+    @Override
+    public void updateById(Long id, OrderCheckoutDto dto) {
+        throw new UnsupportedOperationException("Standard update not available via generic form.");
+    }
+
+    @Override
+    @Transactional
     public void deleteById(Long id) {
         Order order = getById(id);
         order.setIsDeleted(true);
         orderRepository.save(order);
     }
 
-    @Override
-    public PageResponseDto<Order> getAll(int page, int size, String sortBy, String sortDir, String searchQuery) {
-        Sort sort = sortDir.equalsIgnoreCase(Sort.Direction.ASC.name()) ? Sort.by(sortBy).ascending()
-                : Sort.by(sortBy).descending();
-        PageRequest pageRequest = PageRequest.of(page, size, sort);
+    // -------------------------------------------------------------------------
+    // Private helpers
+    // -------------------------------------------------------------------------
 
-        Specification<Order> spec = (root, query, criteriaBuilder) -> {
-            Specification<Order> notDeletedSpec = (r, q, cb) -> cb.isFalse(r.get("isDeleted"));
+    private User getCurrentUser() {
+        String email = SecurityContextHolder.getContext().getAuthentication().getName();
+        return userRepository.findByEmail(email)
+                .orElseThrow(() -> new EntityNotFoundException("Current user not found"));
+    }
 
-            if (searchQuery == null || searchQuery.trim().isEmpty()) {
-                return notDeletedSpec.toPredicate(root, query, criteriaBuilder);
+    private OrderStatus getStatus(OrderStatusType type) {
+        return orderStatusRepository.findByName(type.name())
+                .orElseThrow(() -> new EntityNotFoundException("Order status not found: " + type.name()));
+    }
+
+    private void recalculateOrderTotal(Order order) {
+        BigDecimal total = BigDecimal.ZERO;
+        if (order.getItems() != null) {
+            for (OrderItem item : order.getItems()) {
+                if (!item.getIsDeleted() && item.getPriceAtPurchase() != null) {
+                    total = total.add(item.getPriceAtPurchase());
+                }
             }
-
-            String pattern = "%" + searchQuery.toLowerCase() + "%";
-            Specification<Order> searchSpec = (r, q, cb) -> cb.like(cb.lower(r.get("deliveryAddress")), pattern);
-
-            return criteriaBuilder.and(
-                    notDeletedSpec.toPredicate(root, query, criteriaBuilder),
-                    searchSpec.toPredicate(root, query, criteriaBuilder)
-            );
-        };
-
-        Page<Order> orderPage = orderRepository.findAll(spec, pageRequest);
-        
-        PageResponseDto<Order> response = new PageResponseDto<>();
-        response.setContent(orderPage.getContent());
-        response.setPageNo(orderPage.getNumber());
-        response.setPageSize(orderPage.getSize());
-        response.setTotalElements(orderPage.getTotalElements());
-        response.setTotalPages(orderPage.getTotalPages());
-        response.setLast(orderPage.isLast());
-
-        return response;
+        }
+        order.setTotalPrice(total);
+        orderRepository.save(order);
     }
 }

@@ -28,7 +28,6 @@ public class AdditionalItemServiceImpl implements AdditionalItemService {
     private final AdditionalItemRepository additionalItemRepository;
     private final AdditionalItemMapper additionalItemMapper;
     private final MediaService mediaService;
-
     @Override
     public PageResponseDto<AdditionalItemCardDto> getAll(AdditionalItemFilterDto filter, Pageable pageable) {
 
@@ -53,7 +52,7 @@ public class AdditionalItemServiceImpl implements AdditionalItemService {
         responseDto.setImageUrls(mediaDtos);
 
         if (!mediaDtos.isEmpty()){
-            responseDto.setId(mediaDtos.getFirst().getId());
+            responseDto.setMainImageId(mediaDtos.getFirst().getId());
         }
 
         return responseDto;

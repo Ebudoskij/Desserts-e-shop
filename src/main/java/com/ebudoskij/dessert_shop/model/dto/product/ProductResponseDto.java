@@ -37,4 +37,6 @@ public class ProductResponseDto {
     private Long mainImageId;
 
     private Boolean isDeleted;
+
+    private Boolean customizable;
 }
