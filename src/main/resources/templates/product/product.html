@@ -65,7 +65,7 @@
                 Опис продукту.
             </div>
 
-            <div>
+            <div sec:authorize="hasRole('ADMIN')">
                 <span style="color: #666; margin-right: 0.5rem; font-weight: 500;">Статус:</span>
                 <span th:if="${response.isDeleted}" class="item-status-badge status-deleted">Видалений</span>
                 <span th:unless="${response.isDeleted}" class="item-status-badge status-active">Активний</span>
@@ -84,7 +84,7 @@
                     Додати в кошик
                 </button>
                 
-                <div class="admin-actions" sec:if="hasRole('ADMIN')">
+                <div class="admin-actions" sec:authorize="hasRole('ADMIN')">
                     <a th:href="@{/products/{id}/update(id=${response.id})}" class="btn btn-secondary">Редагувати</a>
                     
                     <!-- Delete (if active) -->

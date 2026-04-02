@@ -39,8 +39,8 @@ public class SecurityConfig {
                     registry.requestMatchers(HttpMethod.GET, "/products", "/products/{id}").permitAll();
                     registry.requestMatchers("/auditLog").hasRole("ADMIN");
 
-                    registry.requestMatchers("/extras",
-                            "/extras/**").hasRole("ADMIN");
+                    registry.requestMatchers(HttpMethod.GET, "/extras/*").hasAnyRole("ADMIN", "USER");
+                    registry.requestMatchers("/extras", "/extras/**").hasRole("ADMIN");
 
                     registry.requestMatchers("/categories",
                             "/categories/**").hasRole("ADMIN");
