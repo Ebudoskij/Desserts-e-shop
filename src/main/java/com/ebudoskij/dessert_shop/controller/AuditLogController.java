@@ -13,6 +13,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestMapping;
 
 import java.util.List;
@@ -40,4 +41,20 @@ public class AuditLogController {
 
         return "auditLog/auditLogs";
     }
+
+    @GetMapping("/export")
+    public ResponseEntity<byte[]> exportToExcel(
+            @ModelAttribute AuditLogFilteringDto filter) {
+
+        byte[] excelBytes = auditLogService.exportToExcel(filter);
+
+        String filename = "audit-log-" + java.time.LocalDate.now() + ".xlsx";
+
+        return ResponseEntity.ok()
+                .header("Content-Disposition", "attachment; filename=\"" + filename + "\"")
+                .header("Content-Type",
+                        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+                .body(excelBytes);
+    }
 }
+

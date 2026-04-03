@@ -148,6 +148,18 @@
                 <div style="display: flex; gap: 8px;">
                     <button type="submit" class="btn btn-primary">Застосувати</button>
                     <a th:href="@{/auditLog}" class="btn btn-secondary">Скинути</a>
+                    <button type="submit"
+                            formaction="/auditLog/export"
+                            class="btn"
+                            style="background:#16a34a;color:#fff;display:inline-flex;align-items:center;gap:6px;border:none;padding:8px 14px;border-radius:6px;cursor:pointer;font-size:0.875rem;font-weight:600;transition:background .2s;"
+                            onmouseover="this.style.background='#15803d'"
+                            onmouseout="this.style.background='#16a34a'"
+                            title="Завантажити відфільтровані дані у форматі Excel">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="currentColor" style="flex-shrink:0;">
+                            <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6zm-1 7V3.5L18.5 9H13zM8 17l4 4 4-4h-2.5v-4h-3v4H8z"/>
+                        </svg>
+                        Експортувати дані
+                    </button>
                 </div>
             </div>
         </form>

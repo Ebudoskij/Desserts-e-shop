@@ -7,4 +7,10 @@ import org.springframework.data.domain.Pageable;
 
 public interface AuditLogService {
     PageResponseDto<AuditLogResponseDto> getAll(AuditLogFilteringDto filter, Pageable pageable);
+
+    /**
+     * Exports all audit log rows matching {@code filter} (no pagination) as an XLSX byte array.
+     * The resulting file mirrors the columns displayed in the auditLogs page.
+     */
+    byte[] exportToExcel(AuditLogFilteringDto filter);
 }
