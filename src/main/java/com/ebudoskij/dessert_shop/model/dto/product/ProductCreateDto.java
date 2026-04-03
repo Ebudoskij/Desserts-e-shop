@@ -28,7 +28,7 @@ public class ProductCreateDto {
     @NotNull
     private UnitType unitType;
 
-    private Boolean customizable;
+    private Boolean customizable = true;
 
     private List<MultipartFile> images;
 

@@ -1,5 +1,6 @@
 package com.ebudoskij.dessert_shop.model;
 
+import com.ebudoskij.dessert_shop.model.enums.AuditActionType;
 import com.fasterxml.jackson.databind.JsonNode;
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -32,8 +33,9 @@ public class AuditLog {
     @Column(name = "entity_id", nullable = false)
     private Long entityId;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "action_type", nullable = false, length = 50)
-    private String actionType;
+    private AuditActionType actionType;
 
     @Column(name = "changes", updatable = false)
     @JdbcTypeCode(SqlTypes.JSON)

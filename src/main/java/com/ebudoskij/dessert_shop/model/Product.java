@@ -36,10 +36,10 @@ public class Product {
     private UnitType unitType;
 
     @ColumnDefault("false")
-    @Column(nullable = false)
-    private Boolean customizable;
+    @Column(name = "customizable", nullable = false)
+    private Boolean customizable = false;
 
     @ColumnDefault("false")
     @Column(name = "is_deleted", nullable = false)
-    private Boolean isDeleted;
+    private Boolean isDeleted = false;
 }

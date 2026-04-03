@@ -62,7 +62,14 @@ public class CategoryController {
         return "redirect:/categories";
     }
 
+    @GetMapping("/{id}/update")
+    public String updateCategoryPage(@PathVariable Long id, Model model){
+        model.addAttribute("categoryResponse", categoryService.getById(id));
+        model.addAttribute("category", new CategoryCreateDto());
+        model.addAttribute("categories", categoryService.getAll());
 
+        return "product/updateProduct";
+    }
 
     @PutMapping("/{id}")
     public String updateById(@PathVariable Long id,
@@ -71,7 +78,6 @@ public class CategoryController {
                              Model model){
         if (bindingResult.hasErrors()) {
             model.addAttribute("categories", categoryService.getAll());
-            model.addAttribute("unitTypes", UnitType.values());
             return "category/updateCategory";
         }
 

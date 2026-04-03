@@ -19,3 +19,9 @@ databaseChangeLog:
       file: db/changelog/changes/009-add-total-price-order.sql
   - include:
       file: db/changelog/changes/010-custom-decor-flow.sql
+  - include:
+      file: db/changelog/changes/011-universal-audit-log.sql
+  - include:
+      file: db/changelog/changes/012-converting-timestamp-to-timezone.sql
+  - include:
+      file: db/changelog/changes/013-audit-log-index.sql

@@ -1,9 +1,50 @@
 <!DOCTYPE html>
-<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<html lang="uk" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Журнал аудиту — перегляд усіх дій адміністраторів та системи">
     <title>Журнал Аудиту - Магазин Десертів</title>
     <link rel="stylesheet" th:href="@{/css/style.css}">
+    <style>
+        /* ── Audit-specific styles ── */
+        .audit-table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+        .audit-table th { background: var(--primary-color, #6b4f35); color: #fff; padding: 10px 12px; text-align: left; font-weight: 600; white-space: nowrap; }
+        .audit-table td { padding: 9px 12px; border-bottom: 1px solid #f0ebe5; vertical-align: top; }
+        .audit-table tr:hover td { background: #fdf8f3; }
+
+        /* Action type badges */
+        .badge { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: 600; white-space: nowrap; }
+        .badge-created  { background: #d1fae5; color: #065f46; }
+        .badge-updated  { background: #dbeafe; color: #1e40af; }
+        .badge-deleted  { background: #fee2e2; color: #991b1b; }
+        .badge-restored { background: #fef9c3; color: #854d0e; }
+        .badge-status   { background: #ede9fe; color: #5b21b6; }
+        .badge-system   { background: #f1f5f9; color: #475569; font-style: italic; }
+
+        /* Change pills */
+        .change-pill { display: inline-block; background: #f5f0eb; border: 1px solid #e2d9cf; border-radius: 6px; padding: 2px 7px; margin: 2px 2px 2px 0; font-size: 0.75rem; color: #4b3728; font-family: monospace; }
+        .change-arrow { color: #9ca3af; margin: 0 2px; }
+
+        /* Entity badge */
+        .entity-badge { display: inline-block; padding: 2px 8px; border-radius: 6px; font-size: 0.75rem; background: #f3f4f6; color: #374151; border: 1px solid #e5e7eb; }
+
+        /* Filter panel */
+        .filters-panel { background: var(--white, #fff); border-radius: 10px; padding: 16px 20px; margin-bottom: 20px; box-shadow: 0 1px 4px rgba(0,0,0,.07); }
+        .filters-form  { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; }
+        .filter-group  { display: flex; flex-direction: column; gap: 4px; }
+        .filter-group label { font-size: 0.8rem; font-weight: 600; color: #6b7280; text-transform: uppercase; letter-spacing: .03em; }
+
+        /* System row */
+        .row-system td { background: #fafafa; color: #6b7280; }
+
+        /* Table wrapper */
+        .table-wrapper { overflow-x: auto; border-radius: 10px; box-shadow: 0 1px 4px rgba(0,0,0,.07); }
+
+        /* IP mono */
+        .ip-mono { font-family: monospace; font-size: 0.78rem; color: #6b7280; }
+        .date-mono { font-family: monospace; font-size: 0.78rem; }
+    </style>
 </head>
 <body>
 
@@ -14,59 +55,261 @@
         <h1>Журнал Аудиту</h1>
     </div>
 
-    <!-- Search Form -->
-    <div class="mb-3">
-        <form th:action="@{/}" method="get" class="flex gap-2">
-            <input type="text" name="searchQuery" th:value="${searchQuery}" placeholder="Пошук у журналі..." class="form-control" style="max-width: 300px;"/>
-            <button type="submit" class="btn btn-secondary">Пошук</button>
-            <a th:href="@{/}" class="btn btn-primary" th:if="${searchQuery != null and !searchQuery.isEmpty()}">Очистити</a>
-            <input type="hidden" name="sortBy" th:value="${sortBy}"/>
-            <input type="hidden" name="sortDir" th:value="${sortDir}"/>
-            <input type="hidden" name="size" th:value="${pageResponse.pageSize}"/>
+    <!-- ── Filter Panel ── -->
+    <div class="filters-panel mb-4">
+        <form th:action="@{/auditLog}" method="get" class="filters-form" id="auditFilterForm">
+
+            <!-- Search -->
+            <div class="filter-group">
+                <label>Пошук</label>
+                <input type="text" name="searchQuery"
+                       th:value="${filter?.searchQuery}"
+                       placeholder="Email, деталі, IP..."
+                       class="form-control" style="width: 200px;"/>
+            </div>
+
+            <!-- Action Type -->
+            <div class="filter-group">
+                <label>Тип дії</label>
+                <select name="actionType" class="form-control" style="width: 160px;">
+                    <option value="">Всі дії</option>
+                    <option th:each="at : ${actionTypes}"
+                            th:value="${at.name()}"
+                            th:text="${at.name()}"
+                            th:selected="${filter?.actionType == at.name()}">
+                    </option>
+                </select>
+            </div>
+
+            <!-- Entity Type -->
+            <div class="filter-group">
+                <label>Тип сутності</label>
+                <select name="entityType" class="form-control" style="width: 160px;">
+                    <option value="">Всі типи</option>
+                    <option th:each="et : ${entityTypes}"
+                            th:value="${et}"
+                            th:text="${et}"
+                            th:selected="${filter?.entityType == et}">
+                    </option>
+                </select>
+            </div>
+
+            <!-- Entity ID -->
+            <div class="filter-group">
+                <label>ID сутності</label>
+                <input type="number" name="entityId"
+                       th:value="${filter?.entityId}"
+                       placeholder="ID..."
+                       class="form-control" style="width: 90px;" min="1"/>
+            </div>
+
+            <!-- Date From -->
+            <div class="filter-group">
+                <label>Дата від</label>
+                <input type="datetime-local" name="minDate" id="minDate"
+                       th:value="${filter?.minDate != null ? #temporals.format(filter.minDate, 'yyyy-MM-dd''T''HH:mm') : ''}"
+                       class="form-control" style="width: 180px;"/>
+            </div>
+
+            <!-- Date To -->
+            <div class="filter-group">
+                <label>Дата до</label>
+                <input type="datetime-local" name="maxDate" id="maxDate"
+                       th:value="${filter?.maxDate != null ? #temporals.format(filter.maxDate, 'yyyy-MM-dd''T''HH:mm') : ''}"
+                       class="form-control" style="width: 180px;"/>
+            </div>
+
+            <!-- Page Size -->
+            <div class="filter-group">
+                <label>Показати</label>
+                <select name="size" class="form-control" style="width: 75px;">
+                    <option value="10"  th:selected="${pageResponse.pageSize == 10}">10</option>
+                    <option value="20"  th:selected="${pageResponse.pageSize == 20}">20</option>
+                    <option value="50"  th:selected="${pageResponse.pageSize == 50}">50</option>
+                    <option value="100" th:selected="${pageResponse.pageSize == 100}">100</option>
+                </select>
+            </div>
+
+            <!-- Sort -->
+            <div class="filter-group">
+                <label>Сортування</label>
+                <select name="sort" class="form-control" style="width: 165px;">
+                    <option value="id,desc" th:selected="${#strings.equals(param.sort, 'id,desc') or param.sort == null}">Новіші спочатку</option>
+                    <option value="id,asc"  th:selected="${#strings.equals(param.sort, 'id,asc')}">Старіші спочатку</option>
+                </select>
+            </div>
+
+            <!-- Hidden: timezone populated by JS -->
+            <input type="hidden" name="timezone" id="timezoneInput" th:value="${filter?.timezone}"/>
+
+            <!-- Actions -->
+            <div class="filter-group">
+                <label>&nbsp;</label>
+                <div style="display: flex; gap: 8px;">
+                    <button type="submit" class="btn btn-primary">Застосувати</button>
+                    <a th:href="@{/auditLog}" class="btn btn-secondary">Скинути</a>
+                </div>
+            </div>
         </form>
     </div>
 
-    <table>
-        <thead>
-            <tr>
-                <th>ID</th>
-                <th>Тип журналу</th>
-                <th>Тип дії</th>
-                <th>Деталі</th>
-                <th>Створено</th>
-            </tr>
-        </thead>
-        <tbody>
-            <tr th:each="log : ${pageResponse.content}">
-                <td th:text="${log.id}">1</td>
-                <td th:text="${log.logType}">SYSTEM</td>
-                <td th:text="${log.actionType}">CREATE</td>
-                <td th:text="${log.details}">Details...</td>
-                <td th:text="${#calendars.format(log.createdAt, 'yyyy-MM-dd HH:mm:ss')}">2023-10-27 10:00:00</td>
-            </tr>
-            <tr th:if="${#lists.isEmpty(pageResponse.content)}">
-                <td colspan="5" class="text-center">Записів не знайдено.</td>
-            </tr>
-        </tbody>
-    </table>
+    <!-- ── Summary bar ── -->
+    <div style="margin-bottom: 12px; font-size: 0.85rem; color: #6b7280;">
+        Знайдено записів: <strong th:text="${pageResponse.totalElements}">0</strong>
+    </div>
 
-    <!-- Pagination -->
-    <div th:if="${pageResponse.totalPages > 1}">
+    <!-- ── Table ── -->
+    <div class="table-wrapper">
+        <table class="audit-table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Сутність</th>
+                    <th>Тип дії</th>
+                    <th>Користувач</th>
+                    <th>Деталі</th>
+                    <th>Зміни</th>
+                    <th>IP-адреса</th>
+                    <th>Створено</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr th:if="${#lists.isEmpty(pageResponse.content)}">
+                    <td colspan="8" class="text-center" style="padding: 2rem; color: #9ca3af;">
+                        Записів аудиту не знайдено.
+                    </td>
+                </tr>
+                <tr th:each="log : ${pageResponse.content}"
+                    th:classappend="${log.userEmail == 'system' ? 'row-system' : ''}">
+
+                    <!-- ID -->
+                    <td style="font-weight: 600; color: #9ca3af; font-size: 0.78rem;"
+                        th:text="${'#' + log.id}">
+                    </td>
+
+                    <!-- Entity Type + ID -->
+                    <td>
+                        <span class="entity-badge" th:text="${log.entityType}">Product</span>
+                        <br>
+                        <span style="font-size:0.75rem;color:#9ca3af;"
+                              th:text="${'#' + log.entityId}"></span>
+                    </td>
+
+                    <!-- Action Type badge -->
+                    <td>
+                        <span class="badge"
+                              th:classappend="${log.actionType == 'CREATED'       ? 'badge-created'  :
+                                               log.actionType == 'UPDATED'       ? 'badge-updated'  :
+                                               log.actionType == 'DELETED'       ? 'badge-deleted'  :
+                                               log.actionType == 'RESTORED'      ? 'badge-restored' :
+                                               log.actionType == 'STATUS_CHANGED'? 'badge-status'   : ''}"
+                              th:text="${log.actionType}">
+                        </span>
+                    </td>
+
+                    <!-- User -->
+                    <td>
+                        <span th:if="${log.userEmail != 'system'}" th:text="${log.userEmail}"
+                              style="font-size:0.82rem;"></span>
+                        <span th:if="${log.userEmail == 'system'}"
+                              class="badge badge-system">system</span>
+                    </td>
+
+                    <!-- Details -->
+                    <td style="max-width: 220px; word-break: break-word;"
+                        th:text="${log.details}"></td>
+
+                    <!-- Changes (pills) -->
+                    <td style="max-width: 260px;">
+                        <span th:each="change : ${log.formattedChanges}" class="change-pill">
+                            <span th:text="${change}"></span>
+                        </span>
+                        <span th:if="${#lists.isEmpty(log.formattedChanges)}"
+                              style="color:#d1d5db;">—</span>
+                    </td>
+
+                    <!-- IP Address -->
+                    <td>
+                        <span class="ip-mono" th:text="${log.ipAddress != null ? log.ipAddress : '—'}"></span>
+                    </td>
+
+                    <!-- Created At -->
+                    <td class="date-mono"
+                        th:text="${#temporals.format(log.createdAt, 'dd.MM.yyyy HH:mm:ss')}">
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- ── Pagination ── -->
+    <div th:if="${pageResponse.totalPages > 1}" style="margin-top: 20px;">
         <ul class="pagination">
-            <li class="page-item" th:classappend="${pageResponse.last ? 'disabled' : ''}">
-                <a class="page-link" th:href="@{/(page=${pageResponse.pageNo - 1}, size=${pageResponse.pageSize}, sortBy=${sortBy}, sortDir=${sortDir}, searchQuery=${searchQuery})}" th:if="${!pageResponse.last}">Попередня</a>
+            <li class="page-item" th:classappend="${pageResponse.pageNo == 0 ? 'disabled' : ''}">
+                <a class="page-link"
+                   th:href="@{/auditLog(page=${pageResponse.pageNo - 1},
+                                        size=${pageResponse.pageSize},
+                                        sort=${param.sort},
+                                        searchQuery=${filter?.searchQuery},
+                                        actionType=${filter?.actionType},
+                                        entityType=${filter?.entityType},
+                                        entityId=${filter?.entityId},
+                                        minDate=${param.minDate},
+                                        maxDate=${param.maxDate},
+                                        timezone=${filter?.timezone})}"
+                   th:if="${pageResponse.pageNo > 0}">Попередня</a>
             </li>
-            
-            <li class="page-item" th:each="i : ${#numbers.sequence(0, pageResponse.totalPages - 1)}" th:classappend="${pageResponse.pageNo == i ? 'active' : ''}">
-                <a class="page-link" th:href="@{/(page=${i}, size=${pageResponse.pageSize}, sortBy=${sortBy}, sortDir=${sortDir}, searchQuery=${searchQuery})}" th:text="${i + 1}">1</a>
+
+            <li class="page-item"
+                th:each="i : ${#numbers.sequence(0, pageResponse.totalPages - 1)}"
+                th:classappend="${pageResponse.pageNo == i ? 'active' : ''}">
+                <a class="page-link"
+                   th:href="@{/auditLog(page=${i},
+                                        size=${pageResponse.pageSize},
+                                        sort=${param.sort},
+                                        searchQuery=${filter?.searchQuery},
+                                        actionType=${filter?.actionType},
+                                        entityType=${filter?.entityType},
+                                        entityId=${filter?.entityId},
+                                        minDate=${param.minDate},
+                                        maxDate=${param.maxDate},
+                                        timezone=${filter?.timezone})}"
+                   th:text="${i + 1}">1</a>
             </li>
 
             <li class="page-item" th:classappend="${pageResponse.last ? 'disabled' : ''}">
-                <a class="page-link" th:href="@{/(page=${pageResponse.pageNo + 1}, size=${pageResponse.pageSize}, sortBy=${sortBy}, sortDir=${sortDir}, searchQuery=${searchQuery})}" th:if="${!pageResponse.last}">Наступна</a>
+                <a class="page-link"
+                   th:href="@{/auditLog(page=${pageResponse.pageNo + 1},
+                                        size=${pageResponse.pageSize},
+                                        sort=${param.sort},
+                                        searchQuery=${filter?.searchQuery},
+                                        actionType=${filter?.actionType},
+                                        entityType=${filter?.entityType},
+                                        entityId=${filter?.entityId},
+                                        minDate=${param.minDate},
+                                        maxDate=${param.maxDate},
+                                        timezone=${filter?.timezone})}"
+                   th:if="${!pageResponse.last}">Наступна</a>
             </li>
         </ul>
     </div>
 </div>
+
+<script>
+    // Auto-detect and inject the user's local timezone for date filter conversion
+    document.addEventListener('DOMContentLoaded', function () {
+        const tzInput = document.getElementById('timezoneInput');
+        if (tzInput && !tzInput.value) {
+            tzInput.value = Intl.DateTimeFormat().resolvedOptions().timeZone;
+        }
+        // Keep timezone on form submit
+        document.getElementById('auditFilterForm').addEventListener('submit', function () {
+            if (!tzInput.value) {
+                tzInput.value = Intl.DateTimeFormat().resolvedOptions().timeZone;
+            }
+        });
+    });
+</script>
 
 </body>
 </html>

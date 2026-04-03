@@ -1,14 +1,19 @@
 package com.ebudoskij.dessert_shop.service.impl;
 
+import com.ebudoskij.dessert_shop.audit.AuditLogHelper;
+import com.ebudoskij.dessert_shop.audit.FieldDiffBuilder;
 import com.ebudoskij.dessert_shop.exception.EntityNotFoundException;
 import com.ebudoskij.dessert_shop.model.*;
 import com.ebudoskij.dessert_shop.model.dto.PageResponseDto;
 import com.ebudoskij.dessert_shop.model.dto.order.*;
+import com.ebudoskij.dessert_shop.model.enums.AuditActionType;
 import com.ebudoskij.dessert_shop.model.enums.OrderStatusType;
 import com.ebudoskij.dessert_shop.repository.*;
 import com.ebudoskij.dessert_shop.service.MediaService;
 import com.ebudoskij.dessert_shop.service.OrderService;
 import com.ebudoskij.dessert_shop.utils.specifications.OrderSpecificationsUtil;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -29,6 +34,8 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class OrderServiceImpl implements OrderService {
 
+    private static final String ENTITY_TYPE = "Order";
+
     private final OrderRepository orderRepository;
     private final OrderItemRepository orderItemRepository;
     private final ProductRepository productRepository;
@@ -36,6 +43,8 @@ public class OrderServiceImpl implements OrderService {
     private final OrderStatusRepository orderStatusRepository;
     private final UserRepository userRepository;
     private final MediaService mediaService;
+    private final AuditLogHelper auditLogHelper;
+    private final ObjectMapper objectMapper;
 
     // -------------------------------------------------------------------------
     // Read
@@ -80,6 +89,8 @@ public class OrderServiceImpl implements OrderService {
                     newOrder.setIsDeleted(false);
                     newOrder.setTotalPrice(BigDecimal.ZERO);
                     return orderRepository.save(newOrder);
+                    // Cart creation is NOT audited here — it is an internal implementation detail.
+                    // The business-meaningful event is recorded at checkout().
                 });
     }
 
@@ -119,7 +130,7 @@ public class OrderServiceImpl implements OrderService {
             BigDecimal extrasTotal = additionalItem.getExtraPrice().multiply(BigDecimal.valueOf(dto.getQuantity()));
             item.setPriceAtPurchase(productPriceTotal.add(extrasTotal));
         } else {
-            item.setPriceAtPurchase(productPriceTotal); // custom decor price added later by admin
+            item.setPriceAtPurchase(productPriceTotal);
         }
 
         item = orderItemRepository.save(item);
@@ -196,13 +207,22 @@ public class OrderServiceImpl implements OrderService {
                 .filter(i -> !i.getIsDeleted())
                 .anyMatch(item -> Boolean.TRUE.equals(item.getCustomDecor()));
 
-        if (hasCustomDecor) {
-            cart.setStatus(getStatus(OrderStatusType.PENDING_CUSTOM_REVIEW));
-        } else {
-            cart.setStatus(getStatus(OrderStatusType.CONFIRMED));
-        }
+        OrderStatusType newStatusType = hasCustomDecor
+                ? OrderStatusType.PENDING_CUSTOM_REVIEW
+                : OrderStatusType.CONFIRMED;
 
+        cart.setStatus(getStatus(newStatusType));
         orderRepository.save(cart);
+
+        // ── Audit: order placed (CREATED from a business perspective) ──
+        ObjectNode snapshot = objectMapper.createObjectNode();
+        snapshot.put("status",          newStatusType.name());
+        snapshot.put("deliveryAddress", cart.getDeliveryAddress());
+        snapshot.put("totalPrice",      cart.getTotalPrice() != null ? cart.getTotalPrice().toPlainString() : "0");
+
+        auditLogHelper.log(ENTITY_TYPE, cart.getId(), AuditActionType.CREATED,
+                snapshot,
+                "Order #" + cart.getId() + " was placed with status " + newStatusType.name());
     }
 
     // -------------------------------------------------------------------------
@@ -216,8 +236,8 @@ public class OrderServiceImpl implements OrderService {
         if (!order.getStatus().getName().equals(OrderStatusType.PENDING_CUSTOM_REVIEW.name())) {
             throw new IllegalStateException("Order is not pending custom review");
         }
+        String oldStatus = order.getStatus().getName();
 
-        // Build a lookup map so we can match DTO items to entities efficiently
         Map<Long, OrderItem> itemMap = order.getItems().stream()
                 .filter(i -> Boolean.TRUE.equals(i.getCustomDecor()) && !Boolean.TRUE.equals(i.getIsDeleted()))
                 .collect(Collectors.toMap(OrderItem::getId, i -> i));
@@ -225,17 +245,13 @@ public class OrderServiceImpl implements OrderService {
         for (AdminOrderItemReviewDto reviewItem : dto.getItems()) {
             OrderItem item = itemMap.get(reviewItem.getOrderItemId());
             if (item == null) {
-                throw new EntityNotFoundException(
-                        "Custom decor order item not found: " + reviewItem.getOrderItemId());
+                throw new EntityNotFoundException("Custom decor order item not found: " + reviewItem.getOrderItemId());
             }
-
             item.setCustomDecorPrice(reviewItem.getCustomDecorPrice());
             item.setAdminComment(reviewItem.getAdminComment());
 
-            // Add the custom decor price on top of the base product price
             BigDecimal decorExtra = reviewItem.getCustomDecorPrice()
                     .multiply(BigDecimal.valueOf(item.getQuantity()));
-            // priceAtPurchase currently holds product price only — add decor on top
             BigDecimal baseProductPrice = item.getProduct().getPricePerUnit()
                     .multiply(BigDecimal.valueOf(item.getQuantity()));
             item.setPriceAtPurchase(baseProductPrice.add(decorExtra));
@@ -243,12 +259,15 @@ public class OrderServiceImpl implements OrderService {
             orderItemRepository.save(item);
         }
 
-        // Refresh and recalculate total
         order = orderRepository.findById(orderId).orElseThrow();
         recalculateOrderTotal(order);
 
         order.setStatus(getStatus(OrderStatusType.WAITING_FOR_CLIENT_APPROVAL));
         orderRepository.save(order);
+
+        auditLogHelper.log(ENTITY_TYPE, orderId, AuditActionType.STATUS_CHANGED,
+                FieldDiffBuilder.statusChange(objectMapper, oldStatus, OrderStatusType.WAITING_FOR_CLIENT_APPROVAL.name()),
+                "Order #" + orderId + " reviewed by admin, awaiting client approval");
     }
 
     @Override
@@ -259,8 +278,13 @@ public class OrderServiceImpl implements OrderService {
         if (!order.getStatus().getName().equals(OrderStatusType.WAITING_FOR_CLIENT_APPROVAL.name())) {
             throw new IllegalStateException("Order is not awaiting client approval");
         }
+        String oldStatus = order.getStatus().getName();
         order.setStatus(getStatus(OrderStatusType.CONFIRMED));
         orderRepository.save(order);
+
+        auditLogHelper.log(ENTITY_TYPE, orderId, AuditActionType.STATUS_CHANGED,
+                FieldDiffBuilder.statusChange(objectMapper, oldStatus, OrderStatusType.CONFIRMED.name()),
+                "Order #" + orderId + " confirmed by client");
     }
 
     @Override
@@ -271,16 +295,26 @@ public class OrderServiceImpl implements OrderService {
         if (!order.getStatus().getName().equals(OrderStatusType.WAITING_FOR_CLIENT_APPROVAL.name())) {
             throw new IllegalStateException("Order is not awaiting client approval");
         }
+        String oldStatus = order.getStatus().getName();
         order.setStatus(getStatus(OrderStatusType.REJECTED));
         orderRepository.save(order);
+
+        auditLogHelper.log(ENTITY_TYPE, orderId, AuditActionType.STATUS_CHANGED,
+                FieldDiffBuilder.statusChange(objectMapper, oldStatus, OrderStatusType.REJECTED.name()),
+                "Order #" + orderId + " rejected by client");
     }
 
     @Override
     @Transactional
     public void cancelOrder(Long orderId) {
         Order order = getById(orderId);
+        String oldStatus = order.getStatus().getName();
         order.setStatus(getStatus(OrderStatusType.CANCELLED));
         orderRepository.save(order);
+
+        auditLogHelper.log(ENTITY_TYPE, orderId, AuditActionType.STATUS_CHANGED,
+                FieldDiffBuilder.statusChange(objectMapper, oldStatus, OrderStatusType.CANCELLED.name()),
+                "Order #" + orderId + " was cancelled");
     }
 
     // -------------------------------------------------------------------------
@@ -298,6 +332,10 @@ public class OrderServiceImpl implements OrderService {
         Order order = getById(id);
         order.setIsDeleted(true);
         orderRepository.save(order);
+
+        auditLogHelper.log(ENTITY_TYPE, id, AuditActionType.DELETED,
+                new FieldDiffBuilder().compare("isDeleted", false, true).build(objectMapper),
+                "Order #" + id + " was soft-deleted");
     }
 
     // -------------------------------------------------------------------------

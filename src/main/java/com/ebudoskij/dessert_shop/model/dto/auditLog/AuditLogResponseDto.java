@@ -4,17 +4,26 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.time.Instant;
+import java.util.List;
 
 @Getter
 @Setter
 public class AuditLogResponseDto {
     private Long id;
 
-    private String logType;
+    private String userEmail;
+
+    private String entityType;
+
+    private Long entityId;
 
     private String actionType;
 
+    private List<String> formattedChanges;
+
     private String details;
+
+    private String ipAddress;
 
     private Instant createdAt;
 }
