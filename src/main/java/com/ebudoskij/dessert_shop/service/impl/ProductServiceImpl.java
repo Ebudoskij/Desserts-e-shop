@@ -1,5 +1,7 @@
 package com.ebudoskij.dessert_shop.service.impl;
 
+import com.ebudoskij.dessert_shop.audit.AuditLogHelper;
+import com.ebudoskij.dessert_shop.audit.FieldDiffBuilder;
 import com.ebudoskij.dessert_shop.exception.EntityNotFoundException;
 import com.ebudoskij.dessert_shop.mapper.ProductMapper;
 import com.ebudoskij.dessert_shop.model.Category;
@@ -7,11 +9,15 @@ import com.ebudoskij.dessert_shop.model.Product;
 import com.ebudoskij.dessert_shop.model.dto.PageResponseDto;
 import com.ebudoskij.dessert_shop.model.dto.product.*;
 import com.ebudoskij.dessert_shop.model.dto.media.MediaResponseDto;
+import com.ebudoskij.dessert_shop.model.enums.AuditActionType;
+import com.ebudoskij.dessert_shop.model.enums.UnitType;
 import com.ebudoskij.dessert_shop.repository.ProductRepository;
 import com.ebudoskij.dessert_shop.service.CategoryService;
 import com.ebudoskij.dessert_shop.service.MediaService;
 import com.ebudoskij.dessert_shop.service.ProductService;
 import com.ebudoskij.dessert_shop.utils.specifications.ProductSpecificationsUtil;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -26,18 +32,21 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 public class ProductServiceImpl implements ProductService {
+
+    private static final String ENTITY_TYPE = "Product";
+
     private final ProductRepository productRepository;
     private final ProductMapper productMapper;
     private final CategoryService categoryService;
     private final MediaService mediaService;
     private final ProductSpecificationsUtil productSpecificationsUtil;
+    private final AuditLogHelper auditLogHelper;
+    private final ObjectMapper objectMapper;
 
     @Override
     public PageResponseDto<ProductCardDto> getAll(ProductFilteringDto filter, Pageable pageable) {
         Specification<Product> spec = productSpecificationsUtil.buildFilters(filter);
-
         Page<ProductCardDto> productPage = productRepository.findProductCards(spec, pageable);
-
         return new PageResponseDto<>(productPage);
     }
 
@@ -53,7 +62,7 @@ public class ProductServiceImpl implements ProductService {
                 .toList();
         responseDto.setImages(mediaDtos);
 
-        if (!mediaDtos.isEmpty()){
+        if (!mediaDtos.isEmpty()) {
             responseDto.setMainImageId(mediaDtos.getFirst().getId());
         }
 
@@ -67,76 +76,98 @@ public class ProductServiceImpl implements ProductService {
                 .filter(p -> !p.getIsDeleted())
                 .orElseThrow(() -> new EntityNotFoundException("Product not found with id: " + id));
 
+        // ── Snapshot BEFORE changes ──
+        String oldName         = existingProduct.getName();
+        String oldCategoryName = existingProduct.getCategory() != null
+                ? existingProduct.getCategory().getName() : null;
+        BigDecimal oldPrice    = existingProduct.getPricePerUnit();
+        UnitType   oldUnitType = existingProduct.getUnitType();
+        Boolean    oldCustom   = existingProduct.getCustomizable();
+
+        // ── Apply update ──
         productMapper.updateEntityFromDto(dto, existingProduct);
 
-        // 1. Handle Category
         if (dto.getCategoryId() != null) {
             existingProduct.setCategory(categoryService.getById(dto.getCategoryId()));
         }
-
-        // 2. Delete images first
         if (dto.getDeletedImageIds() != null && !dto.getDeletedImageIds().isEmpty()) {
             mediaService.deleteEntityImages(dto.getDeletedImageIds());
         }
-
-        // 3. Handle Main Image Logic (Mutual Exclusion)
-        // Priority: New uploads usually take precedence if both are sent,
-        // but typically the UI should only allow one selection.
         if (dto.getNewMainImageIndex() != null && dto.getImages() != null) {
-            // If a NEW image is main, we don't care about mainImageId.
-            // saveEntityImages already calls demoteCurrentMain inside.
             mediaService.saveEntityImages("Product", id, dto.getImages(), dto.getNewMainImageIndex());
         } else {
-            // If no NEW image is main, check if we need to swap to an existing one
             if (dto.getMainImageId() != null) {
                 mediaService.setMainImageById("Product", id, dto.getMainImageId());
             }
-            // Save remaining new images normally (index null means no new main)
             if (dto.getImages() != null && !dto.getImages().isEmpty()) {
                 mediaService.saveEntityImages("Product", id, dto.getImages(), null);
             }
         }
 
         productRepository.save(existingProduct);
+
+        // ── Audit diff ──
+        String newCategoryName = existingProduct.getCategory() != null
+                ? existingProduct.getCategory().getName() : null;
+        FieldDiffBuilder diff = new FieldDiffBuilder()
+                .compare("name",         oldName,         existingProduct.getName())
+                .compare("category",     oldCategoryName, newCategoryName)
+                .compare("pricePerUnit", oldPrice != null ? oldPrice.toPlainString() : null,
+                        existingProduct.getPricePerUnit() != null ? existingProduct.getPricePerUnit().toPlainString() : null)
+                .compare("unitType",     oldUnitType != null ? oldUnitType.name() : null,
+                        existingProduct.getUnitType() != null ? existingProduct.getUnitType().name() : null)
+                .compare("customizable", oldCustom, existingProduct.getCustomizable());
+
+        if (diff.hasChanges()) {
+            auditLogHelper.log(ENTITY_TYPE, id, AuditActionType.UPDATED,
+                    diff.build(objectMapper),
+                    "Product '" + existingProduct.getName() + "' was updated");
+        }
     }
 
     @Override
+    @Transactional
     public void deleteById(Long id) {
         Product product = productRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Product not found with id: " + id));
 
         product.setIsDeleted(true);
         productRepository.save(product);
+
+        auditLogHelper.log(ENTITY_TYPE, id, AuditActionType.DELETED,
+                new FieldDiffBuilder().compare("isDeleted", false, true).build(objectMapper),
+                "Product '" + product.getName() + "' was soft-deleted");
     }
 
     @Override
     @Transactional
     public void createProduct(ProductCreateDto dto) {
-        // 1. Map DTO to Entity
         Product product = productMapper.toEntity(dto);
-
-        // Explicitly set default state (though your DB or Entity might do this too)
         product.setIsDeleted(false);
 
-        // 2. Handle Category association
         if (dto.getCategoryId() != null) {
             Category category = categoryService.getById(dto.getCategoryId());
             product.setCategory(category);
         }
 
-        // 3. Save the product first to generate the ID needed for Media
-        Product savedProduct = productRepository.save(product);
+        Product saved = productRepository.save(product);
 
-        // 4. Save images using the updated MediaService
-        // We pass the newMainImageIndex so the service can assign priority 0
         if (dto.getImages() != null && !dto.getImages().isEmpty()) {
-            mediaService.saveEntityImages(
-                    "Product",
-                    savedProduct.getId(),
-                    dto.getImages(),
-                    dto.getMainImageIndex() // Ensure this field exists in ProductCreateDto
-            );
+            mediaService.saveEntityImages("Product", saved.getId(), dto.getImages(), dto.getMainImageIndex());
         }
+
+        // ── Audit creation snapshot ──
+        ObjectNode snapshot = objectMapper.createObjectNode();
+        snapshot.put("name",         saved.getName());
+        snapshot.put("category",     saved.getCategory() != null ? saved.getCategory().getName() : null);
+        snapshot.put("pricePerUnit", saved.getPricePerUnit() != null ? saved.getPricePerUnit().toPlainString() : null);
+        snapshot.put("unitType",     saved.getUnitType() != null ? saved.getUnitType().name() : null);
+        snapshot.put("customizable", saved.getCustomizable());
+        snapshot.put("isDeleted",    saved.getIsDeleted());
+
+        auditLogHelper.log(ENTITY_TYPE, saved.getId(), AuditActionType.CREATED,
+                snapshot,
+                "Product '" + saved.getName() + "' was created");
     }
 
     @Override
@@ -150,11 +181,16 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
+    @Transactional
     public void restoreById(Long id) {
         Product product = productRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Product not found with id: " + id));
 
         product.setIsDeleted(false);
         productRepository.save(product);
+
+        auditLogHelper.log(ENTITY_TYPE, id, AuditActionType.RESTORED,
+                new FieldDiffBuilder().compare("isDeleted", true, false).build(objectMapper),
+                "Product '" + product.getName() + "' was restored");
     }
 }

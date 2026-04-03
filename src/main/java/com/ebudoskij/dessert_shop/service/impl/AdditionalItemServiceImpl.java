@@ -1,15 +1,20 @@
 package com.ebudoskij.dessert_shop.service.impl;
 
+import com.ebudoskij.dessert_shop.audit.AuditLogHelper;
+import com.ebudoskij.dessert_shop.audit.FieldDiffBuilder;
 import com.ebudoskij.dessert_shop.exception.EntityNotFoundException;
 import com.ebudoskij.dessert_shop.mapper.AdditionalItemMapper;
 import com.ebudoskij.dessert_shop.model.AdditionalItem;
 import com.ebudoskij.dessert_shop.model.dto.PageResponseDto;
 import com.ebudoskij.dessert_shop.model.dto.additionalItem.*;
 import com.ebudoskij.dessert_shop.model.dto.media.MediaResponseDto;
+import com.ebudoskij.dessert_shop.model.enums.AuditActionType;
 import com.ebudoskij.dessert_shop.repository.AdditionalItemRepository;
 import com.ebudoskij.dessert_shop.service.AdditionalItemService;
 import com.ebudoskij.dessert_shop.service.MediaService;
 import com.ebudoskij.dessert_shop.utils.specifications.AdditionalItemSpecificationUtil;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -25,17 +30,19 @@ import java.util.List;
 @RequiredArgsConstructor
 public class AdditionalItemServiceImpl implements AdditionalItemService {
 
+    private static final String ENTITY_TYPE = "AdditionalItem";
+
     private final AdditionalItemRepository additionalItemRepository;
     private final AdditionalItemMapper additionalItemMapper;
     private final MediaService mediaService;
+    private final AuditLogHelper auditLogHelper;
+    private final ObjectMapper objectMapper;
+
     @Override
     public PageResponseDto<AdditionalItemCardDto> getAll(AdditionalItemFilterDto filter, Pageable pageable) {
-
         Specification<AdditionalItem> spec = AdditionalItemSpecificationUtil.buildFilters(filter);
-
-        Page<AdditionalItemCardDto> additionalItemPage = additionalItemRepository.findAdditionalItemCards(spec, pageable);
-
-        return new PageResponseDto<>(additionalItemPage);
+        Page<AdditionalItemCardDto> page = additionalItemRepository.findAdditionalItemCards(spec, pageable);
+        return new PageResponseDto<>(page);
     }
 
     @Override
@@ -50,7 +57,7 @@ public class AdditionalItemServiceImpl implements AdditionalItemService {
                 .toList();
         responseDto.setImageUrls(mediaDtos);
 
-        if (!mediaDtos.isEmpty()){
+        if (!mediaDtos.isEmpty()) {
             responseDto.setMainImageId(mediaDtos.getFirst().getId());
         }
 
@@ -60,67 +67,81 @@ public class AdditionalItemServiceImpl implements AdditionalItemService {
     @Override
     @Transactional
     public void createAdditionalItem(AdditionalItemCreateDto dto) {
-        // 1. Map and initialize basic state
         AdditionalItem item = additionalItemMapper.toEntity(dto);
         item.setIsDeleted(false);
 
-        // 2. Persist to generate the ID
-        AdditionalItem savedItem = additionalItemRepository.save(item);
+        AdditionalItem saved = additionalItemRepository.save(item);
 
-        // 3. Save images with index awareness
         if (dto.getImages() != null && !dto.getImages().isEmpty()) {
-            mediaService.saveEntityImages(
-                    "AdditionalItem",
-                    savedItem.getId(),
-                    dto.getImages(),
-                    dto.getMainImageIndex() // Ensure this is in your AdditionalItemCreateDto
-            );
+            mediaService.saveEntityImages("AdditionalItem", saved.getId(), dto.getImages(), dto.getMainImageIndex());
         }
+
+        // ── Audit creation snapshot ──
+        ObjectNode snapshot = objectMapper.createObjectNode();
+        snapshot.put("name",       saved.getName());
+        snapshot.put("extraPrice", saved.getExtraPrice() != null ? saved.getExtraPrice().toPlainString() : null);
+        snapshot.put("isDeleted",  saved.getIsDeleted());
+
+        auditLogHelper.log(ENTITY_TYPE, saved.getId(), AuditActionType.CREATED,
+                snapshot,
+                "Additional item '" + saved.getName() + "' was created");
     }
 
     @Override
     @Transactional
     public void updateById(Long id, AdditionalItemUpdateDto dto) {
-        // 1. Fetch and validate existence
         AdditionalItem existingItem = additionalItemRepository.findById(id)
                 .filter(a -> !a.getIsDeleted())
                 .orElseThrow(() -> new EntityNotFoundException("AdditionalItem not found with id: " + id));
 
-        // 2. Update basic fields (name, price, etc.)
+        // ── Snapshot BEFORE changes ──
+        String     oldName  = existingItem.getName();
+        BigDecimal oldPrice = existingItem.getExtraPrice();
+
         additionalItemMapper.updateEntityFromDto(dto, existingItem);
 
-        // 3. Delete requested images first to free up priority slots/space
         if (dto.getDeletedImageIds() != null && !dto.getDeletedImageIds().isEmpty()) {
             mediaService.deleteEntityImages(dto.getDeletedImageIds());
         }
-
-        // 4. Handle Main Image Logic (Mutual Exclusion)
-        // Priority 1: Check if a NEW upload is designated as main
         if (dto.getNewMainImageIndex() != null && dto.getImages() != null) {
             mediaService.saveEntityImages("AdditionalItem", id, dto.getImages(), dto.getNewMainImageIndex());
         } else {
-            // Priority 2: If no new main, check if an EXISTING image was selected as main
             if (dto.getMainImageId() != null) {
                 mediaService.setMainImageById("AdditionalItem", id, dto.getMainImageId());
             }
-
-            // Save any remaining new images without making them main
             if (dto.getImages() != null && !dto.getImages().isEmpty()) {
                 mediaService.saveEntityImages("AdditionalItem", id, dto.getImages(), null);
             }
         }
 
-        // 5. Save the item (Hibernate handles dirty checking, but explicit save is fine)
         additionalItemRepository.save(existingItem);
+
+        // ── Audit diff ──
+        FieldDiffBuilder diff = new FieldDiffBuilder()
+                .compare("name",       oldName,  existingItem.getName())
+                .compare("extraPrice",
+                        oldPrice != null ? oldPrice.toPlainString() : null,
+                        existingItem.getExtraPrice() != null ? existingItem.getExtraPrice().toPlainString() : null);
+
+        if (diff.hasChanges()) {
+            auditLogHelper.log(ENTITY_TYPE, id, AuditActionType.UPDATED,
+                    diff.build(objectMapper),
+                    "Additional item '" + existingItem.getName() + "' was updated");
+        }
     }
 
     @Override
+    @Transactional
     public void deleteById(Long id) {
         AdditionalItem item = additionalItemRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("AdditionalItem not found with id: " + id));
 
         item.setIsDeleted(true);
         additionalItemRepository.save(item);
+
+        auditLogHelper.log(ENTITY_TYPE, id, AuditActionType.DELETED,
+                new FieldDiffBuilder().compare("isDeleted", false, true).build(objectMapper),
+                "Additional item '" + item.getName() + "' was soft-deleted");
     }
 
     @Override
@@ -134,11 +155,16 @@ public class AdditionalItemServiceImpl implements AdditionalItemService {
     }
 
     @Override
+    @Transactional
     public void restoreById(Long id) {
         AdditionalItem item = additionalItemRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("AdditionalItem not found with id: " + id));
 
         item.setIsDeleted(false);
         additionalItemRepository.save(item);
+
+        auditLogHelper.log(ENTITY_TYPE, id, AuditActionType.RESTORED,
+                new FieldDiffBuilder().compare("isDeleted", true, false).build(objectMapper),
+                "Additional item '" + item.getName() + "' was restored");
     }
 }

@@ -1,40 +1,60 @@
 package com.ebudoskij.dessert_shop.controller;
 
 import com.ebudoskij.dessert_shop.model.dto.PageResponseDto;
+import com.ebudoskij.dessert_shop.model.dto.auditLog.AuditLogFilteringDto;
 import com.ebudoskij.dessert_shop.model.dto.auditLog.AuditLogResponseDto;
+import com.ebudoskij.dessert_shop.model.enums.AuditActionType;
 import com.ebudoskij.dessert_shop.service.AuditLogService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
+
+import java.util.List;
 
 @Controller
 @RequestMapping("/auditLog")
 @RequiredArgsConstructor
 public class AuditLogController {
+
     private final AuditLogService auditLogService;
 
     @GetMapping
-    public String fetchAll(@RequestParam(required = false, defaultValue = "0") int page,
-                           @RequestParam(required = false, defaultValue = "10") int size,
-                           @RequestParam(required = false, defaultValue = "id") String sortBy,
-                           @RequestParam(required = false, defaultValue = "asc") String sortDir,
-                           @RequestParam(required = false) String searchQuery,
-                           Model model){
-        PageResponseDto<AuditLogResponseDto> response = auditLogService.getAll(
-                page,
-                size,
-                sortBy,
-                sortDir,
-                searchQuery);
+    public String fetchAll(
+            @ModelAttribute("filter") AuditLogFilteringDto filter,
+            @PageableDefault(size = 20, page = 0, sort = "id", direction = Sort.Direction.DESC)
+            Pageable pageable,
+            Model model) {
+
+        PageResponseDto<AuditLogResponseDto> response = auditLogService.getAll(filter, pageable);
 
         model.addAttribute("pageResponse", response);
-        model.addAttribute("sortBy", sortBy);
-        model.addAttribute("sortDir", sortDir);
-        model.addAttribute("searchQuery", searchQuery);
+        model.addAttribute("filter", filter);
+        model.addAttribute("actionTypes", AuditActionType.values());
+        model.addAttribute("entityTypes", List.of("Product", "AdditionalItem", "Order", "Category"));
 
         return "auditLog/auditLogs";
     }
+
+    @GetMapping("/export")
+    public ResponseEntity<byte[]> exportToExcel(
+            @ModelAttribute AuditLogFilteringDto filter) {
+
+        byte[] excelBytes = auditLogService.exportToExcel(filter);
+
+        String filename = "audit-log-" + java.time.LocalDate.now() + ".xlsx";
+
+        return ResponseEntity.ok()
+                .header("Content-Disposition", "attachment; filename=\"" + filename + "\"")
+                .header("Content-Type",
+                        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+                .body(excelBytes);
+    }
 }
+
