@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <title>Category Details - Dessert Shop</title>
     <link rel="stylesheet" th:href="@{/css/style.css}">
+    <link rel="stylesheet" th:href="@{/css/item-detail.css}">
 </head>
 <body>
 
@@ -11,10 +12,10 @@
 
 <div class="container">
     <div class="page-header">
-        <h1>Category Details</h1>
+        <h1>Категорія</h1>
         <div>
-            <a th:href="@{/categories/{id}/update(id=${response.id})}" class="btn btn-primary">Edit Category</a>
-            <a th:href="@{/categories}" class="btn btn-secondary">Back to Categories</a>
+            <a th:href="@{/categories/{id}/update(id=${response.id})}" class="btn btn-primary">Редагувати Категорію</a>
+            <a th:href="@{/categories}" class="btn btn-secondary">Повернутись до Списку</a>
         </div>
     </div>
 
@@ -24,22 +25,22 @@
             <div class="detail-value" th:text="${response.id}">1</div>
         </div>
         <div class="detail-row">
-            <div class="detail-label">Name</div>
+            <div class="detail-label">Назва</div>
             <div class="detail-value" th:text="${response.name}">Name</div>
         </div>
         <div class="detail-row">
-            <div class="detail-label">Description</div>
+            <div class="detail-label">Опис</div>
             <div class="detail-value" th:text="${response.description}">Description</div>
         </div>
         <div class="detail-row">
-            <div class="detail-label">Parent Category</div>
-            <div class="detail-value" th:text="${response.parent != null ? response.parent.name : 'None'}">Parent</div>
+            <div class="detail-label">Батьківська Категорія</div>
+            <div class="detail-value" th:text="${response.parent != null ? response.parent.name : 'Відсутня'}">Parent</div>
         </div>
         <div class="detail-row">
-            <div class="detail-label">Status</div>
+            <div class="detail-label">Статус</div>
             <div class="detail-value">
-                <span th:if="${response.isDeleted}" class="text-danger">Deleted</span>
-                <span th:unless="${response.isDeleted}">Active</span>
+                <span th:if="${response.isDeleted}" class="item-status-badge status-deleted">Видалена</span>
+                <span th:unless="${response.isDeleted}" class="item-status-badge status-active">Активна</span>
             </div>
         </div>
     </div>

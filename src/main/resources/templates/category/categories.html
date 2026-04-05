@@ -26,17 +26,21 @@
             </tr>
         </thead>
         <tbody>
-            <tr th:each="category : ${response}">
+            <tr th:each="category : ${response}" th:classappend="${category.isDeleted ? 'item-deleted' : ''}">
                 <td th:text="${category.id}">1</td>
                 <td th:text="${category.name}">Category Name</td>
                 <td th:text="${category.description}">Description</td>
-                <td th:text="${category.parent != null ? category.parent.name : 'Немає'}">Parent</td>
+                <td th:text="${category.parent != null ? category.parent.name : 'Відсутня'}">Parent</td>
                 <td class="actions">
                     <a th:href="@{/categories/{id}(id=${category.id})}" class="btn btn-sm btn-secondary">Переглянути</a>
-                    <a th:href="@{/categories/{id}/update(id=${category.id})}" class="btn btn-sm btn-primary">Редагувати</a>
-                    <form th:action="@{/categories/{id}(id=${category.id})}" method="post" style="display: inline;">
-                        <input type="hidden" name="_method" value="delete" />
-                        <button type="button" class="btn btn-sm btn-danger" onclick="openConfirmModal(this.closest('form'), 'Ви впевнені, що хочете видалити цю категорію?');">Видалити</button>
+                    <a th:href="@{/categories/{id}/update(id=${category.id})}" th:if="${!category.isDeleted}" class="btn btn-sm btn-primary">Редагувати</a>
+
+                    <form th:action="@{/categories/{id}(id=${category.id})}" th:method="delete" style="display: flex; margin: 0;">
+                        <button type="button" class="btn btn-sm btn-danger action-btn" onclick="openConfirmModal(this.closest('form'), 'Ви впевнені, що хочете видалити цей продукт?');">Видалити</button>
+                    </form>
+
+                    <form th:if="${category.isDeleted}" th:action="@{/categories/{id}/restore(id=${category.id})}" th:method="post" style="display: flex; margin: 0; width: 100%;">
+                        <button type="button" class="btn btn-sm action-btn" style="background-color: var(--success, #28a745); color: white;" onclick="openConfirmModal(this.closest('form'), 'Ви впевнені, що хочете відновити цей продукт?');">Відновити</button>
                     </form>
                 </td>
             </tr>

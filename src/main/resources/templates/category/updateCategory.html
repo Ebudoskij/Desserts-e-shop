@@ -18,6 +18,9 @@
     <div class="form-card">
         <form th:action="@{/categories/{id}(id=${id})}" th:object="${category}" method="post">
             <input type="hidden" name="_method" value="put" />
+
+            <input type="hidden" th:field="*{id}" />
+
             <div class="form-group">
                 <label for="name">Назва</label>
                 <input type="text" id="name" th:field="*{name}" class="form-control" />

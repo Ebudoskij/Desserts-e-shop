@@ -36,9 +36,14 @@ public class CategoryServiceImpl implements CategoryService {
     }
 
     @Override
+    public List<Category> getAllAdmin() {
+        return categoryRepository.findAll().stream()
+                .toList();
+    }
+
+    @Override
     public Category getById(Long id) {
         return categoryRepository.findById(id)
-                .filter(c -> !c.getIsDeleted())
                 .orElseThrow(() -> new EntityNotFoundException("Category not found with id: " + id));
     }
 
@@ -113,6 +118,19 @@ public class CategoryServiceImpl implements CategoryService {
         List<Long> result = new ArrayList<>();
         collect(categoryId, result);
         return result;
+    }
+
+    @Override
+    public void restoreById(Long id) {
+        Category category = categoryRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Category not found with id: " + id));
+
+        category.setIsDeleted(false);
+        categoryRepository.save(category);
+
+        auditLogHelper.log(ENTITY_TYPE, id, AuditActionType.RESTORED,
+                new FieldDiffBuilder().compare("isDeleted", true, false).build(objectMapper),
+                "Category '" + category.getName() + "' was restored");
     }
 
     private void collect(Long categoryId, List<Long> result) {

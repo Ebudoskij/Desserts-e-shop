@@ -83,10 +83,10 @@
             <div class="filter-group">
                 <label>Показати</label>
                 <select name="size" class="form-control" style="width: 80px;">
-                    <option value="5" th:selected="${pageResponse.pageSize == 5}">5</option>
-                    <option value="10" th:selected="${pageResponse.pageSize == 10}">10</option>
-                    <option value="20" th:selected="${pageResponse.pageSize == 20}">20</option>
-                    <option value="50" th:selected="${pageResponse.pageSize == 50}">50</option>
+                    <option value="4" th:selected="${pageResponse.pageSize == 4}">4</option>
+                    <option value="8" th:selected="${pageResponse.pageSize == 8}">8</option>
+                    <option value="16" th:selected="${pageResponse.pageSize == 16}">16</option>
+                    <option value="32" th:selected="${pageResponse.pageSize == 32}">32</option>
                 </select>
             </div>
 
@@ -137,6 +137,10 @@
                     <a th:href="@{/products/{id}/update(id=${product.id})}" class="btn btn-sm btn-secondary action-btn" th:if="${!product.isDeleted}" sec:authorize="hasRole('ADMIN')">Редагувати</a>
                     <form th:action="@{/products/{id}(id=${product.id})}" th:method="delete" style="display: flex; margin: 0;" th:if="${!product.isDeleted}" sec:authorize="hasRole('ADMIN')">
                         <button type="button" class="btn btn-sm btn-danger action-btn" onclick="openConfirmModal(this.closest('form'), 'Ви впевнені, що хочете видалити цей продукт?');">Видалити</button>
+                    </form>
+
+                    <form th:if="${product.isDeleted}" th:action="@{/products/{id}/restore(id=${product.id})}" th:method="post" style="display: flex; margin: 0; width: 100%;"  sec:authorize="hasRole('ADMIN')">
+                        <button type="button" class="btn btn-sm action-btn" style="background-color: var(--success, #28a745); color: white; width: 100%;" onclick="openConfirmModal(this.closest('form'), 'Ви впевнені, що хочете відновити цей продукт?');">Відновити</button>
                     </form>
                 </div>
             </div>
