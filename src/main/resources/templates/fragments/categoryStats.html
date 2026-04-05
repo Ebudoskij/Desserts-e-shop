@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="uk" xmlns:th="http://www.thymeleaf.org">
+<body>
+
+<div th:fragment="categoryStats" id="categoryStatsSection" style="display:none; margin-bottom:2rem;">
+
+    <div style="display:flex; align-items:center; gap:12px; margin-bottom:1.25rem;">
+        <h2 style="margin:0; font-size:18px; font-weight:500;">Статистика за категоріями</h2>
+        <span style="font-size:12px; color:#6b7280; background:#f3f4f6; padding:2px 8px;
+                 border-radius:6px; border:1px solid #e5e7eb;">поточна сторінка</span>
+    </div>
+
+    <div id="catMetricCards"
+         style="display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-bottom:1.5rem;">
+    </div>
+
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:24px; align-items:start;">
+        <div id="catLegend" style="display:flex; flex-direction:column; gap:8px; font-size:13px;"></div>
+        <div style="position:relative; width:100%; height:260px;">
+            <canvas id="catDonutChart"></canvas>
+        </div>
+    </div>
+
+    <!--/* Thymeleaf writes pure JSON — no inline JS expressions, no entity touching */-->
+    <script type="application/json" id="catStatsData">
+        [
+            <th:block th:each="s, iter : ${categoryStats}">
+            {
+                "id":       <th:block th:text="${s.id}">0</th:block>,
+                "parentId": <th:block th:text="${s.parentId != null ? s.parentId : 'null'}">null</th:block>,
+                "name":     "<th:block th:text="${#strings.escapeXml(s.name)}"></th:block>",
+            "direct":   <th:block th:text="${s.directCount}">0</th:block>
+            }<th:block th:if="${!iter.last}">,</th:block>
+            </th:block>
+        ]
+    </script>
+
+    <script>
+        (function () {
+
+            const raw = document.getElementById('catStatsData');
+            if (!raw) return;
+
+            let catNodes;
+            try {
+                catNodes = JSON.parse(raw.textContent);
+            } catch (e) {
+                console.error('catStatsData parse error', e);
+                return;
+            }
+
+            /* ── Build lookup & child lists ──────────────────────────────────── */
+            const catMap = {};
+            catNodes.forEach(n => { catMap[n.id] = { ...n, total: 0, children: [] }; });
+            catNodes.forEach(n => {
+                if (n.parentId !== null && catMap[n.parentId]) {
+                    catMap[n.parentId].children.push(n.id);
+                }
+            });
+
+            function computeTotal(id) {
+                const node = catMap[id];
+                let t = node.direct;
+                node.children.forEach(cid => { t += computeTotal(cid); });
+                node.total = t;
+                return t;
+            }
+            catNodes.filter(n => n.parentId === null).forEach(n => computeTotal(n.id));
+
+            /* ── Color palettes ──────────────────────────────────────────────── */
+            const parentColors  = ['#7F77DD','#1D9E75','#D85A30','#378ADD','#639922','#BA7517','#D4537E'];
+            const childPalettes = [
+                ['#CECBF6','#AFA9EC','#8F88E0'],
+                ['#9FE1CB','#5DCAA5','#2EB389'],
+                ['#F5C4B3','#F0997B','#E87045'],
+                ['#B5D4F4','#85B7EB','#549FDE'],
+                ['#C0DD97','#97C459','#6BAA2D'],
+                ['#FAC775','#EF9F27','#D08010'],
+                ['#F4C0D1','#ED93B1','#DE5F8B'],
+            ];
+
+            /* ── Flat chart series ───────────────────────────────────────────── */
+            const roots = catNodes.filter(n => n.parentId === null);
+            const labels = [], data = [], fillColors = [], strokeColors = [];
+
+            roots.forEach((root, ri) => {
+                const node     = catMap[root.id];
+                const pColor   = parentColors[ri % parentColors.length];
+                const cPalette = childPalettes[ri % childPalettes.length];
+                const children = node.children.map(id => catMap[id]);
+
+                if (node.total === 0) return;
+
+                if (children.length === 0) {
+                    labels.push(node.name);
+                    data.push(node.total);
+                    fillColors.push(pColor);
+                    strokeColors.push(pColor);
+                } else {
+                    if (node.direct > 0) {
+                        labels.push(node.name);
+                        data.push(node.direct);
+                        fillColors.push(pColor);
+                        strokeColors.push(pColor);
+                    }
+                    children.forEach((child, ci) => {
+                        if (child.total === 0) return;
+                        labels.push('\u00a0\u00a0\u21b3 ' + child.name);
+                        data.push(child.total);
+                        fillColors.push(cPalette[ci % cPalette.length]);
+                        strokeColors.push(pColor);
+                    });
+                }
+            });
+
+            const total = data.reduce((a, b) => a + b, 0);
+
+            if (total === 0) {
+                document.getElementById('catMetricCards').innerHTML =
+                    '<p style="color:#9ca3af;font-size:14px;grid-column:1/-1;">Немає даних для відображення.</p>';
+                return;
+            }
+
+            /* ── Metric cards ────────────────────────────────────────────────── */
+            const cardEl = document.getElementById('catMetricCards');
+            roots
+                .map(r => ({ name: catMap[r.id].name, total: catMap[r.id].total }))
+                .filter(r => r.total > 0)
+                .sort((a, b) => b.total - a.total)
+                .slice(0, 3)
+                .forEach(r => {
+                    const pct  = Math.round(r.total / total * 100);
+                    const card = document.createElement('div');
+                    card.style.cssText =
+                        'background:#f9fafb;border-radius:8px;padding:0.75rem 1rem;border:1px solid #e5e7eb;';
+                    card.innerHTML =
+                        `<p style="font-size:12px;color:#6b7280;margin:0 0 4px;">${r.name}</p>` +
+                        `<p style="font-size:22px;font-weight:500;margin:0;">${r.total}` +
+                        ` <span style="font-size:13px;font-weight:400;color:#9ca3af;">(${pct}%)</span></p>`;
+                    cardEl.appendChild(card);
+                });
+
+            /* ── Legend ──────────────────────────────────────────────────────── */
+            const legendEl = document.getElementById('catLegend');
+            labels.forEach((lbl, i) => {
+                const pct     = Math.round(data[i] / total * 100);
+                const isChild = lbl.startsWith('\u00a0');
+                const row     = document.createElement('div');
+                row.style.cssText =
+                    `display:flex;align-items:center;gap:8px;${isChild ? 'padding-left:16px;opacity:0.85;' : ''}`;
+                row.innerHTML =
+                    `<span style="width:10px;height:10px;border-radius:2px;` +
+                    `background:${fillColors[i]};border:1.5px solid ${strokeColors[i]};flex-shrink:0;"></span>` +
+                    `<span style="flex:1;">${lbl.trim()}</span>` +
+                    `<span style="color:#9ca3af;font-size:12px;">${data[i]} (${pct}%)</span>`;
+                legendEl.appendChild(row);
+            });
+
+            /* ── Chart.js donut ──────────────────────────────────────────────── */
+            function renderChart() {
+                new Chart(document.getElementById('catDonutChart'), {
+                    type: 'doughnut',
+                    data: {
+                        labels,
+                        datasets: [{
+                            data,
+                            backgroundColor: fillColors,
+                            borderColor:     '#ffffff',
+                            borderWidth:     2,
+                            hoverOffset:     6,
+                        }],
+                    },
+                    options: {
+                        responsive:          true,
+                        maintainAspectRatio: false,
+                        cutout:              '62%',
+                        plugins: {
+                            legend:  { display: false },
+                            tooltip: {
+                                callbacks: {
+                                    label: ctx => {
+                                        const pct = Math.round(ctx.parsed / total * 100);
+                                        return ` ${ctx.parsed} продуктів (${pct}%)`;
+                                    },
+                                },
+                            },
+                        },
+                    },
+                });
+            }
+
+            if (window.Chart) {
+                renderChart();
+            } else {
+                const s  = document.createElement('script');
+                s.src    = 'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js';
+                s.onload = renderChart;
+                document.head.appendChild(s);
+            }
+
+        })();
+    </script>
+
+</div>
+
+</body>
+</html>

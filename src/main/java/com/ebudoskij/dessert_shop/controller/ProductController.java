@@ -1,7 +1,9 @@
 package com.ebudoskij.dessert_shop.controller;
 
+import com.ebudoskij.dessert_shop.model.Category;
 import com.ebudoskij.dessert_shop.model.dto.PageResponseDto;
 import com.ebudoskij.dessert_shop.model.dto.additionalItem.AdditionalItemFilterDto;
+import com.ebudoskij.dessert_shop.model.dto.category.CategoryStatDto;
 import com.ebudoskij.dessert_shop.model.dto.product.*;
 import com.ebudoskij.dessert_shop.model.enums.UnitType;
 import com.ebudoskij.dessert_shop.service.AdditionalItemService;
@@ -17,6 +19,8 @@ import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @Controller
 @RequestMapping("/products")
 @RequiredArgsConstructor
@@ -31,13 +35,33 @@ public class ProductController {
                            @PageableDefault(size = 4, page = 0, sort = "id", direction = Sort.Direction.ASC)
                            Pageable pageable,
                            Model model){
-        PageResponseDto<ProductCardDto> response = productService.getAll(filter, pageable);
+        PageResponseDto<ProductCardDto> pageResponse = productService.getAll(filter, pageable);
 
-        model.addAttribute("pageResponse", response);
-        model.addAttribute("categories", categoryService.getAll());
+        List<Category> categories = categoryService.getAll();
+
+        model.addAttribute("pageResponse", pageResponse);
+        model.addAttribute("categories", categories);
         model.addAttribute("minPrice", productService.getMinPrice());
         model.addAttribute("maxPrice", productService.getMaxPrice());
-        model.addAttribute("additionalItems", additionalItemService.getAll(new AdditionalItemFilterDto(), Pageable.unpaged()).getContent());
+        model.addAttribute("additionalItems", additionalItemService.getAll(
+                new AdditionalItemFilterDto(),
+                Pageable.unpaged()).getContent()
+        );
+
+        List<CategoryStatDto> categoryStats = categories.stream()
+                .filter(c -> c.getIsDeleted() == null || !c.getIsDeleted())
+                .map(c -> new CategoryStatDto(
+                        c.getId(),
+                        c.getParent() != null ? c.getParent().getId() : null,
+                        c.getName(),
+                        (int) pageResponse.getContent().stream()
+                                .filter(p -> p.getCategory() != null
+                                        && p.getCategory().getId().equals(c.getId()))
+                                .count()
+                ))
+                .toList();
+
+        model.addAttribute("categoryStats", categoryStats);
 
         return "product/products";
     }
