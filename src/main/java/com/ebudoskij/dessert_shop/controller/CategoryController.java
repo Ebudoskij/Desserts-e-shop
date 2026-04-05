@@ -2,6 +2,7 @@ package com.ebudoskij.dessert_shop.controller;
 
 import com.ebudoskij.dessert_shop.model.Category;
 import com.ebudoskij.dessert_shop.model.dto.category.CategoryCreateDto;
+import com.ebudoskij.dessert_shop.model.dto.category.CategoryUpdateDto;
 import com.ebudoskij.dessert_shop.model.enums.UnitType;
 import com.ebudoskij.dessert_shop.service.CategoryService;
 import jakarta.validation.Valid;
@@ -21,7 +22,7 @@ public class CategoryController {
 
     @GetMapping
     public String fetchAll(Model model){
-        List<Category> response = categoryService.getAll();
+        List<Category> response = categoryService.getAllAdmin();
 
         model.addAttribute("response", response);
 
@@ -64,11 +65,11 @@ public class CategoryController {
 
     @GetMapping("/{id}/update")
     public String updateCategoryPage(@PathVariable Long id, Model model){
-        model.addAttribute("categoryResponse", categoryService.getById(id));
-        model.addAttribute("category", new CategoryCreateDto());
+
+        model.addAttribute("category", new CategoryUpdateDto(categoryService.getById(id)));
         model.addAttribute("categories", categoryService.getAll());
 
-        return "product/updateProduct";
+        return "category/updateCategory";
     }
 
     @PutMapping("/{id}")
@@ -89,6 +90,12 @@ public class CategoryController {
     @DeleteMapping("/{id}")
     public String deleteById(@PathVariable Long id){
         categoryService.deleteById(id);
+        return "redirect:/categories";
+    }
+
+    @PostMapping("/{id}/restore")
+    public String restoreById(@PathVariable Long id){
+        categoryService.restoreById(id);
         return "redirect:/categories";
     }
 }

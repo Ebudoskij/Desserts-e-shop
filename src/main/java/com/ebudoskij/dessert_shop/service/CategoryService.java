@@ -18,4 +18,8 @@ public interface CategoryService {
     void deleteById(Long id);
 
     List<Long> getCategoryAndChildrenIds(Long categoryId);
+
+    void restoreById(Long id);
+
+    List<Category> getAllAdmin();
 }
