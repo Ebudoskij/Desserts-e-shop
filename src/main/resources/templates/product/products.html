@@ -115,8 +115,8 @@
             <div class="product-card-body">
                 <div style="display: flex; justify-content: space-between; align-items: flex-start;">
                     <h3 class="product-card-title"
-                        th:text="${#strings.length(product.name) > 100
-                                  ? #strings.substring(product.name, 0, 100) + '…'
+                        th:text="${#strings.length(product.name) > 20
+                                  ? #strings.substring(product.name, 0, 20) + '…'
                                   : product.name}"
                         th:title="${product.name}">Назва продукту</h3>
                     <span style="font-size: 0.8rem; color: #999;" th:text="'#' + ${product.id}" sec:authorize="hasRole('ADMIN')">#1</span>
