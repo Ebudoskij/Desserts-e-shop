@@ -61,7 +61,7 @@
     <table>
         <thead>
             <tr>
-                <th>ID</th>
+                <th sec:authorize="hasRole('ADMIN')">ID</th>
                 <th sec:authorize="hasRole('ADMIN')">Користувач</th>
                 <th>Статус</th>
                 <th>Адреса доставки</th>
@@ -73,7 +73,7 @@
         <tbody>
             <tr th:each="order : ${pageResponse.content}"
                 th:classappend="${order.isDeleted ? 'row-deleted' : ''}">
-                <td th:text="${order.id}">1</td>
+                <td sec:authorize="hasRole('ADMIN')" th:text="${order.id}">1</td>
                 <td sec:authorize="hasRole('ADMIN')" th:text="${order.user.email}"></td>
 
                 <!-- Status badge -->
@@ -83,14 +83,21 @@
                             order.status.name == 'PENDING_CUSTOM_REVIEW'     ? ' badge-warning'   :
                             order.status.name == 'WAITING_FOR_CLIENT_APPROVAL' ? ' badge-info'    :
                             order.status.name == 'CONFIRMED'                 ? ' badge-success'   :
-                            order.status.name == 'REJECTED'                  ? ' badge-danger'    :
+                            order.status.name == 'REJECTED'   ? ' badge-danger'    :
                             order.status.name == 'CANCELLED'                 ? ' badge-secondary' :
                             order.status.name == 'CREATED'                   ? ' badge-light'     : ' badge-light'}"
                           style="padding: 3px 10px; border-radius: 20px; font-size: 0.82rem; font-weight: 500; display: inline-block;">
                     </span>
                 </td>
 
-                <td th:text="${order.deliveryAddress}">—</td>
+                <td>
+                    <span th:if="${order.deliveryAddress == null or #strings.length(order.deliveryAddress) <= 100}"
+                          th:text="${order.deliveryAddress != null ? order.deliveryAddress : '—'}"></span>
+                    <th:block th:if="${order.deliveryAddress != null and #strings.length(order.deliveryAddress) > 100}">
+                        <span th:text="${#strings.substring(order.deliveryAddress, 0, 100) + '…'}"></span>
+                        <a th:href="@{/orders/{id}(id=${order.id})}" class="truncate-more">більше</a>
+                    </th:block>
+                </td>
                 <td th:text="${order.deliveryDate != null ? #temporals.format(order.deliveryDate, 'dd.MM.yyyy HH:mm') : '—'}"></td>
                 <td th:text="${order.totalPrice != null ? order.totalPrice + ' ₴' : '—'}"></td>
 
@@ -107,6 +114,10 @@
                             Видалити
                         </button>
                     </form>
+
+                    <button type="button" class="btn btn-sm btn-danger" th:if="${order.isDeleted}" disabled>
+                        Видалено
+                    </button>
                 </td>
             </tr>
 
