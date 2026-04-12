@@ -1,9 +1,12 @@
 <!DOCTYPE html>
-<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<html lang="uk" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Управління категоріями товарів магазину десертів">
     <title>Категорії - Магазин Десертів</title>
     <link rel="stylesheet" th:href="@{/css/style.css}">
+    <link rel="stylesheet" th:href="@{/css/categories.css}">
 </head>
 <body>
 
@@ -12,7 +15,52 @@
 <div class="container">
     <div class="page-header">
         <h1>Категорії</h1>
-        <a th:href="@{/categories/add}" class="btn btn-primary">Додати Нову Категорію</a>
+
+        <!-- Toolbar: Add button + Import button -->
+        <div class="import-toolbar">
+            <a th:href="@{/categories/add}" class="btn btn-primary">Додати Нову Категорію</a>
+
+            <!-- "Імпортувати з Excel" button — mirrors the audit-log "Експортувати дані" button -->
+            <button type="button"
+                    id="categoryImportBtn"
+                    class="btn-import"
+                    title="Завантажити .xlsx-файл із категоріями для масового імпорту">
+                <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15"
+                     viewBox="0 0 24 24" fill="currentColor" style="flex-shrink:0;">
+                    <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6zm-1
+                             7V3.5L18.5 9H13zM8 11h8v2H8zm0 4h5v2H8z"/>
+                </svg>
+                Імпортувати з Excel
+            </button>
+
+            <!-- Template download link -->
+            <a th:href="@{/categories/import/template}"
+               class="template-link"
+               title="Завантажити шаблон .xlsx для заповнення">
+                Завантажити шаблон
+            </a>
+        </div>
+    </div>
+
+    <!-- Hidden multipart form + file input (submitted via categories.js) -->
+    <form id="categoryImportForm"
+          th:action="@{/categories/import}"
+          method="post"
+          enctype="multipart/form-data"
+          style="display:none;">
+        <input type="file" id="categoryImportInput" name="file" accept=".xlsx">
+    </form>
+
+    <!-- Flash: success -->
+    <div th:if="${importSuccess}"
+         class="alert-import alert-success"
+         th:text="${importSuccess}">
+    </div>
+
+    <!-- Flash: error -->
+    <div th:if="${importError}"
+         class="alert-import alert-error"
+         th:text="${importError}">
     </div>
 
     <table>
@@ -28,19 +76,39 @@
         <tbody>
             <tr th:each="category : ${response}" th:classappend="${category.isDeleted ? 'item-deleted' : ''}">
                 <td th:text="${category.id}">1</td>
-                <td th:text="${category.name}">Category Name</td>
-                <td th:text="${category.description}">Description</td>
+                <td>
+                    <span th:if="${#strings.length(category.name) <= 100}"
+                          th:text="${category.name}"></span>
+                    <th:block th:if="${#strings.length(category.name) > 100}">
+                        <span th:text="${#strings.substring(category.name, 0, 100) + '…'}"></span>
+                        <a th:href="@{/categories/{id}(id=${category.id})}" class="truncate-more">більше</a>
+                    </th:block>
+                </td>
+                <td>
+                    <span th:if="${category.description == null or #strings.length(category.description) <= 100}"
+                          th:text="${category.description}"></span>
+                    <th:block th:if="${category.description != null and #strings.length(category.description) > 100}">
+                        <span th:text="${#strings.substring(category.description, 0, 100) + '…'}"></span>
+                        <a th:href="@{/categories/{id}(id=${category.id})}" class="truncate-more">більше</a>
+                    </th:block>
+                </td>
                 <td th:text="${category.parent != null ? category.parent.name : 'Відсутня'}">Parent</td>
                 <td class="actions">
                     <a th:href="@{/categories/{id}(id=${category.id})}" class="btn btn-sm btn-secondary">Переглянути</a>
                     <a th:href="@{/categories/{id}/update(id=${category.id})}" th:if="${!category.isDeleted}" class="btn btn-sm btn-primary">Редагувати</a>
 
                     <form th:action="@{/categories/{id}(id=${category.id})}" th:method="delete" style="display: flex; margin: 0;">
-                        <button type="button" class="btn btn-sm btn-danger action-btn" onclick="openConfirmModal(this.closest('form'), 'Ви впевнені, що хочете видалити цей продукт?');">Видалити</button>
+                        <button type="button" class="btn btn-sm btn-danger action-btn"
+                                onclick="openConfirmModal(this.closest('form'), 'Ви впевнені, що хочете видалити цей продукт?');">Видалити</button>
                     </form>
 
-                    <form th:if="${category.isDeleted}" th:action="@{/categories/{id}/restore(id=${category.id})}" th:method="post" style="display: flex; margin: 0; width: 100%;">
-                        <button type="button" class="btn btn-sm action-btn" style="background-color: var(--success, #28a745); color: white;" onclick="openConfirmModal(this.closest('form'), 'Ви впевнені, що хочете відновити цей продукт?');">Відновити</button>
+                    <form th:if="${category.isDeleted}"
+                          th:action="@{/categories/{id}/restore(id=${category.id})}"
+                          th:method="post"
+                          style="display: flex; margin: 0; width: 100%;">
+                        <button type="button" class="btn btn-sm action-btn"
+                                style="background-color: var(--success, #28a745); color: white;"
+                                onclick="openConfirmModal(this.closest('form'), 'Ви впевнені, що хочете відновити цей продукт?');">Відновити</button>
                     </form>
                 </td>
             </tr>
@@ -54,5 +122,6 @@
 <div th:replace="~{fragments/modal :: confirmModal}"></div>
 <div th:replace="~{fragments/modal :: confirmModalScript}"></div>
 
+<script th:src="@{/js/categories.js}"></script>
 </body>
 </html>

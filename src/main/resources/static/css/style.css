@@ -473,3 +473,16 @@ select.form-control {
     position: absolute; z-index: 1; left: 0; right: 0; top: 17px;
     height: 4px; border-radius: 2px; background-color: var(--primary-color, #8b5a2b);
 }
+
+/* ── Truncation "більше" link (used in any list/table page) ── */
+.truncate-more {
+    margin-left: 4px;
+    font-size: 0.8rem;
+    color: var(--light-brown);
+    text-decoration: underline;
+    white-space: nowrap;
+}
+
+.truncate-more:hover {
+    color: var(--dark-brown);
+}

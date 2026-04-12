@@ -87,7 +87,11 @@
             </div>
             <div class="product-card-body">
                 <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-                    <h3 class="product-card-title" th:text="${item.name}">Назва додатку</h3>
+                    <h3 class="product-card-title"
+                        th:text="${#strings.length(item.name) > 100
+                                  ? #strings.substring(item.name, 0, 100) + '…'
+                                  : item.name}"
+                        th:title="${item.name}">Назва додатку</h3>
                     <span style="font-size: 0.8rem; color: #999;" th:text="'#' + ${item.id}">#1</span>
                 </div>
                 
