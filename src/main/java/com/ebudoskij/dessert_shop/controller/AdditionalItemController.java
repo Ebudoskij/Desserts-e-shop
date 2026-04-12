@@ -86,6 +86,7 @@ public class AdditionalItemController {
                              BindingResult bindingResult,
                              Model model){
         if (bindingResult.hasErrors()) {
+            model.addAttribute("additionalItemResponse", additionalItemService.getById(id));
             model.addAttribute("categories", categoryService.getAll());
             model.addAttribute("unitTypes", UnitType.values());
             return "additionalItem/updateAdditionalItem";

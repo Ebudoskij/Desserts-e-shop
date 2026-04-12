@@ -117,6 +117,7 @@ public class ProductController {
                              BindingResult bindingResult,
                              Model model){
         if (bindingResult.hasErrors()) {
+            model.addAttribute("productResponse", productService.getById(id));
             model.addAttribute("categories", categoryService.getAll());
             model.addAttribute("unitTypes", UnitType.values());
             return "product/updateProduct";
